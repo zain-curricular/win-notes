@@ -1,0 +1,8 @@
+node_modules
+out
+release
+.env
+.env.local
+.env.production
+.env.supabase.local
+.env.*.local

@@ -1,0 +1,130 @@
+import { app, BrowserWindow, Menu, ipcMain, nativeTheme, shell } from 'electron'
+import { release } from 'os'
+import { join } from 'path'
+
+const isMac = process.platform === 'darwin'
+const isWin = process.platform === 'win32'
+// Windows 11 is build 22000+; Mica is only available there.
+const hasMica = isWin && Number(release().split('.')[2] ?? 0) >= 22000
+const TOOLBAR_HEIGHT = 52
+
+// Testing aid: NOTES_PROFILE runs an isolated copy (its own data and single-instance lock),
+// NOTES_CDP_PORT exposes the DevTools protocol for automated checks.
+if (process.env.NOTES_PROFILE) app.setPath('userData', join(app.getPath('userData'), `profile-${process.env.NOTES_PROFILE}`))
+if (process.env.NOTES_CDP_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.NOTES_CDP_PORT)
+
+let mainWindow: BrowserWindow | null = null
+
+function overlayColors(): Electron.TitleBarOverlayOptions {
+  const dark = nativeTheme.shouldUseDarkColors
+  return {
+    color: dark ? '#1e1e1e' : '#ffffff',
+    symbolColor: dark ? '#e5e5e7' : '#1d1d1f',
+    height: TOOLBAR_HEIGHT
+  }
+}
+
+function createWindow(): void {
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 780,
+    minWidth: 760,
+    minHeight: 480,
+    show: false,
+    title: 'Notes',
+    titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
+    ...(isMac ? { trafficLightPosition: { x: 18, y: 18 }, vibrancy: 'sidebar', visualEffectState: 'followWindow' } : {}),
+    ...(isWin ? { titleBarOverlay: overlayColors() } : {}),
+    ...(hasMica ? { backgroundMaterial: 'mica' } : {}),
+    backgroundColor: isMac || hasMica ? '#00000000' : nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      sandbox: true,
+      spellcheck: true,
+      // Keep applying live edits from other computers while the window is in the background.
+      backgroundThrottling: false
+    }
+  })
+  mainWindow = win
+
+  win.once('ready-to-show', () => win.show())
+
+  // Links inside notes open in the default browser, never inside the app.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^(https?|mailto):/i.test(url)) shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url !== win.webContents.getURL()) {
+      event.preventDefault()
+      if (/^(https?|mailto):/i.test(url)) shell.openExternal(url)
+    }
+  })
+
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F12') win.webContents.toggleDevTools()
+  })
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    win.loadURL(process.env.ELECTRON_RENDERER_URL)
+  } else {
+    win.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+  win.on('closed', () => {
+    mainWindow = null
+  })
+}
+
+function buildMenu(): void {
+  if (!isMac) {
+    Menu.setApplicationMenu(null)
+    return
+  }
+  // App shortcuts are handled in the renderer; the menu only provides the standard macOS roles.
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      { role: 'appMenu' },
+      { role: 'editMenu' },
+      {
+        label: 'View',
+        submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' }, { role: 'togglefullscreen' }]
+      },
+      { role: 'windowMenu' }
+    ])
+  )
+}
+
+ipcMain.on('app-info', (event) => {
+  event.returnValue = {
+    platform: process.platform,
+    material: isMac ? 'vibrancy' : hasMica ? 'mica' : 'none',
+    version: app.getVersion()
+  }
+})
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow) return
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  })
+
+  app.whenReady().then(() => {
+    if (isWin) app.setAppUserModelId('com.winnotes.app')
+    buildMenu()
+    createWindow()
+    nativeTheme.on('updated', () => {
+      if (isWin && mainWindow) mainWindow.setTitleBarOverlay(overlayColors())
+    })
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+
+  app.on('window-all-closed', () => {
+    if (!isMac) app.quit()
+  })
+}

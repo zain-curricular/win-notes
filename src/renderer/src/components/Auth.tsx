@@ -1,0 +1,102 @@
+import { useState, type FormEvent, type ReactNode } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { Loader2 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { AppIcon } from './AppIcon'
+
+export function AuthScreen({ onOffline }: { onOffline: () => void }): ReactNode {
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+
+  const submit = async (e: FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!supabase) return
+    setBusy(true)
+    setError(null)
+    setInfo(null)
+    try {
+      if (mode === 'signin') {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+        if (error) throw error
+      } else {
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
+        if (error) throw error
+        if (!data.session) {
+          setInfo('Check your email to confirm your account, then sign in here.')
+          setMode('signin')
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="auth">
+      <div className="auth-drag" />
+      <motion.div
+        className="auth-card"
+        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+      >
+        <motion.div initial={{ rotate: -8, scale: 0.8 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 14, delay: 0.05 }}>
+          <AppIcon size={72} />
+        </motion.div>
+        <h1>Notes</h1>
+        <p className="auth-sub">Sign in to sync your notes and folders across your computers in real time.</p>
+
+        {supabase ? (
+          <form onSubmit={submit} className="auth-form">
+            <input type="email" placeholder="Email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+            <input
+              type="password"
+              placeholder="Password"
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <AnimatePresence mode="popLayout">
+              {error ? (
+                <motion.div key="err" className="auth-error" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  {error}
+                </motion.div>
+              ) : null}
+              {info ? (
+                <motion.div key="info" className="auth-info" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  {info}
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+            <motion.button whileTap={{ scale: 0.98 }} className="auth-primary" type="submit" disabled={busy}>
+              {busy ? <Loader2 size={16} className="spin" /> : mode === 'signin' ? 'Sign In' : 'Create Account'}
+            </motion.button>
+            <button
+              type="button"
+              className="auth-link"
+              onClick={() => {
+                setMode(mode === 'signin' ? 'signup' : 'signin')
+                setError(null)
+              }}
+            >
+              {mode === 'signin' ? "Don't have an account? Create one" : 'Already have an account? Sign in'}
+            </button>
+          </form>
+        ) : (
+          <p className="auth-error">Cloud sync is not configured in this build.</p>
+        )}
+        <button className="auth-offline" onClick={onOffline}>
+          Use without syncing
+        </button>
+      </motion.div>
+    </div>
+  )
+}

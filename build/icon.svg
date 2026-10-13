@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd84d"/>
+      <stop offset="1" stop-color="#f5b800"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f2f2f4"/>
+    </linearGradient>
+    <clipPath id="clip">
+      <rect x="100" y="100" width="824" height="824" rx="185"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#paper)"/>
+    <rect x="100" y="100" width="824" height="250" fill="url(#top)"/>
+    <g stroke="#d9d9de" stroke-width="14">
+      <line x1="100" y1="500" x2="924" y2="500"/>
+      <line x1="100" y1="620" x2="924" y2="620"/>
+      <line x1="100" y1="740" x2="924" y2="740"/>
+      <line x1="100" y1="860" x2="924" y2="860"/>
+    </g>
+    <g fill="#b3b3b8">
+      <circle cx="190" cy="380" r="16"/><circle cx="300" cy="380" r="16"/><circle cx="410" cy="380" r="16"/>
+      <circle cx="520" cy="380" r="16"/><circle cx="630" cy="380" r="16"/><circle cx="740" cy="380" r="16"/>
+      <circle cx="850" cy="380" r="16"/>
+    </g>
+  </g>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="4"/>
+</svg>
