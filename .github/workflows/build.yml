@@ -1,5 +1,5 @@
 # Builds the Windows installer and the macOS app (a Mac app can only be built on macOS).
-# Set repository secrets VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY first.
+# Supabase URL and publishable key come from the committed .env.production.
 name: Build apps
 
 on:
@@ -28,8 +28,6 @@ jobs:
       - name: Build
         run: npm run ${{ matrix.script }}
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
       - uses: actions/upload-artifact@v4
         with:
