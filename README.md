@@ -39,9 +39,26 @@ Run a second, isolated copy (like a second computer) with `NOTES_PROFILE=B`.
 
 ## Mac build
 
-A Mac app has to be built on a Mac: run `npm run dist:mac` there, or use the **Build apps** GitHub workflow
-(add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as repository secrets). The app is unsigned, so on
-first launch right-click it and choose **Open**.
+A Mac app has to be built on a Mac. The cloud settings (`.env.production`: Supabase URL and publishable key
+only) are committed, so a fresh clone builds a syncing app with no extra setup.
+
+**On the Mac** (needs Node.js 24 from nodejs.org and git):
+
+```sh
+git clone https://github.com/zain-curricular/win-notes.git
+cd win-notes
+npm ci
+npm run dist:mac        # → release/Notes-<version>-universal.dmg (Apple silicon and Intel)
+```
+
+Later updates: `git pull && npm ci && npm run dist:mac`.
+
+**Or let GitHub build it:** Actions → **Build apps** → **Run workflow**, then download `notes-macos-latest`
+from the finished run.
+
+**Install:** open the `.dmg`, drag **Notes** into Applications. The app is unsigned, so a downloaded copy is
+blocked the first time: run `xattr -cr /Applications/Notes.app` in Terminal, or try to open it once and click
+**Open Anyway** in System Settings → Privacy & Security. A copy built on that Mac usually opens directly.
 
 ## Shortcuts
 
