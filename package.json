@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dist:win": "electron-vite build && electron-builder --win --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac --publish never",
-    "setup:cloud": "node scripts/setup-cloud.mjs"
+    "setup:cloud": "node scripts/setup-cloud.mjs",
+    "build:editor": "node scripts/build-mobile-editor.mjs",
+    "dist:android": "node scripts/build-android.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
@@ -37,7 +39,8 @@
     "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "typescript": "^7.0.2",
-    "vite": "^7.3.7"
+    "vite": "^7.3.7",
+    "vite-plugin-singlefile": "^2.3.3"
   },
   "productName": "Notes",
   "build": {

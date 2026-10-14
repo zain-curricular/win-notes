@@ -1,6 +1,6 @@
 # Notes
 
-A macOS Notes–style app for Windows and Mac, with folders and instant cloud sync through Supabase.
+A macOS Notes–style app for Windows, Mac and Android, with folders and instant cloud sync through Supabase.
 
 - Three-pane Notes layout: folders sidebar, date-grouped note list (or gallery), editor
 - Notes text styles and shortcuts: Title, Heading, Subheading, Body, Monostyled, bulleted/dashed/numbered lists, checklists, block quotes, tables, highlights, collapsible headings
@@ -59,6 +59,31 @@ Later updates: `git pull && npm ci && npm run dist:mac`.
 **Install:** open the `.dmg`, drag **Notes** into Applications. The app is unsigned, so a downloaded copy is
 blocked the first time: run `xattr -cr /Applications/Notes.app` in Terminal, or try to open it once and click
 **Open Anyway** in System Settings → Privacy & Security. A copy built on that Mac usually opens directly.
+
+## Android build
+
+The Android app lives in `mobile/` (Expo / React Native). It talks to the same Supabase project, so notes
+and folders sync live with the Windows and Mac apps, and it edits the same rich-text format: the note editor
+is the desktop TipTap editor (`mobile-editor/`, built from `src/renderer/src/editor`) running in a WebView.
+
+**Build on any OS** (needs Node.js 24, JDK 17 and the Android SDK with `ANDROID_HOME` set; Android Studio
+installs all of that):
+
+```sh
+npm ci                  # repo root: the editor bundle is built from the desktop sources
+cd mobile && npm ci && cd ..
+npm run dist:android    # → release/Notes-<version>.apk
+```
+
+The script bundles the editor page, runs `expo prebuild` to generate `mobile/android/`, builds with Gradle
+and copies the APK into `release/`. The APK is signed with the debug key, so it installs on any phone with
+"install unknown apps" allowed, but it is not a Play Store build.
+
+**Or let GitHub build it:** the **Build apps** workflow also produces the APK and attaches it to the release.
+
+**Develop:** `cd mobile && npx expo run:android` (an emulator or a USB-connected phone with debugging on).
+After changing anything under `src/renderer/src/editor` or `mobile-editor/`, run `npm run build:editor`
+in the repo root so the mobile app picks it up.
 
 ## Shortcuts
 

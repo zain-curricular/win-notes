@@ -1,4 +1,4 @@
-# Builds the Windows installer and the macOS app (a Mac app can only be built on macOS).
+# Builds the Windows installer, the macOS app (a Mac app can only be built on macOS) and the Android APK.
 # Run it from the Actions tab ("Run workflow") or by pushing a tag like v0.1.1.
 # Supabase URL and publishable key come from the committed .env.production.
 name: Build apps
@@ -46,3 +46,34 @@ jobs:
           gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes "Windows installer (.exe) and universal Mac app (.dmg). Unsigned: see the README for first-launch steps." || true
           files=(release/*.exe release/*.dmg)
           gh release upload "$tag" "${files[@]}" --clobber
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+      - run: npm ci
+        working-directory: mobile
+      - name: Build APK
+        run: npm run dist:android
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes "Windows installer (.exe), universal Mac app (.dmg) and Android app (.apk). Unsigned: see the README for first-launch steps." || true
+          gh release upload "$tag" release/*.apk --clobber
