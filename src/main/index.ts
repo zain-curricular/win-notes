@@ -28,6 +28,8 @@ function handleLink(url: string | undefined): void {
     mainWindow.focus()
   } else {
     pendingLink = url
+    // On macOS the app keeps running with no window; open one to receive the link.
+    if (!mainWindow && app.isReady()) createWindow()
   }
 }
 
