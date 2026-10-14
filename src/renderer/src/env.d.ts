@@ -11,4 +11,8 @@ interface Window {
     material: 'vibrancy' | 'mica' | 'none'
     version: string
   }
+  deepLinks?: {
+    take: () => Promise<string | null>
+    on: (cb: (url: string) => void) => () => void
+  }
 }

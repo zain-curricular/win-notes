@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, ipcMain, nativeTheme, shell } from 'electron'
 import { release } from 'os'
-import { join } from 'path'
+import { join, resolve } from 'path'
 
 const isMac = process.platform === 'darwin'
 const isWin = process.platform === 'win32'
@@ -14,6 +14,31 @@ if (process.env.NOTES_PROFILE) app.setPath('userData', join(app.getPath('userDat
 if (process.env.NOTES_CDP_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.NOTES_CDP_PORT)
 
 let mainWindow: BrowserWindow | null = null
+
+// Sign-up confirmation emails link back to winnotes://auth-callback#access_token=...
+const PROTOCOL = 'winnotes'
+const findLink = (argv: string[]): string | undefined => argv.find((a) => a.startsWith(`${PROTOCOL}://`))
+let pendingLink: string | null = findLink(process.argv) ?? null
+
+function handleLink(url: string | undefined): void {
+  if (!url) return
+  if (mainWindow && !mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.send('deep-link', url)
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  } else {
+    pendingLink = url
+  }
+}
+
+if (!process.env.NOTES_PROFILE) {
+  if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [resolve(process.argv[1])])
+  else app.setAsDefaultProtocolClient(PROTOCOL)
+}
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleLink(url)
+})
 
 function overlayColors(): Electron.TitleBarOverlayOptions {
   const dark = nativeTheme.shouldUseDarkColors
@@ -95,6 +120,12 @@ function buildMenu(): void {
   )
 }
 
+ipcMain.handle('take-deep-link', () => {
+  const url = pendingLink
+  pendingLink = null
+  return url
+})
+
 ipcMain.on('app-info', (event) => {
   event.returnValue = {
     platform: process.platform,
@@ -106,7 +137,9 @@ ipcMain.on('app-info', (event) => {
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    const link = findLink(argv)
+    if (link) return handleLink(link)
     if (!mainWindow) return
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()

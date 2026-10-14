@@ -102,6 +102,29 @@ function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () =
 export default function App(): ReactNode {
   const [session, setSession] = useState<Session | null | undefined>(supabase ? undefined : null)
   const [localMode, setLocalMode] = useState(() => localStorage.getItem(MODE_KEY) === 'local')
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
+
+  // Confirmation emails open winnotes://auth-callback#access_token=…&refresh_token=…
+  useEffect(() => {
+    if (!supabase || !window.deepLinks) return
+    const client = supabase
+    const handle = async (url: string | null): Promise<void> => {
+      if (!url) return
+      const params = new URLSearchParams(url.split('#')[1] ?? url.split('?')[1] ?? '')
+      const error = params.get('error_description')
+      if (error) {
+        setAuthNotice(error.replace(/\+/g, ' '))
+        return
+      }
+      const access_token = params.get('access_token')
+      const refresh_token = params.get('refresh_token')
+      if (!access_token || !refresh_token) return
+      const { error: sessionError } = await client.auth.setSession({ access_token, refresh_token })
+      if (sessionError) setAuthNotice(`${sessionError.message}. Sign in with your email and password.`)
+    }
+    window.deepLinks.take().then(handle)
+    return window.deepLinks.on(handle)
+  }, [])
 
   useEffect(() => {
     if (!supabase) return
@@ -143,6 +166,8 @@ export default function App(): ReactNode {
       ) : (
         <motion.div key="auth" className="fill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           <AuthScreen
+            key={authNotice ?? 'auth'}
+            notice={authNotice}
             onOffline={() => {
               localStorage.setItem(MODE_KEY, 'local')
               setLocalMode(true)

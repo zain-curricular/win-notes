@@ -4,12 +4,14 @@ import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AppIcon } from './AppIcon'
 
-export function AuthScreen({ onOffline }: { onOffline: () => void }): ReactNode {
+export const AUTH_REDIRECT = 'winnotes://auth-callback'
+
+export function AuthScreen({ onOffline, notice }: { onOffline: () => void; notice?: string | null }): ReactNode {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(notice ?? null)
   const [info, setInfo] = useState<string | null>(null)
 
   const submit = async (e: FormEvent): Promise<void> => {
@@ -23,10 +25,15 @@ export function AuthScreen({ onOffline }: { onOffline: () => void }): ReactNode 
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw error
       } else {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password })
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          // Opens the app from the confirmation email and signs in (must be an allowed redirect URL in Supabase).
+          options: { emailRedirectTo: AUTH_REDIRECT }
+        })
         if (error) throw error
         if (!data.session) {
-          setInfo('Check your email to confirm your account, then sign in here.')
+          setInfo('Check your email and click the confirmation link. It will open Notes and sign you in.')
           setMode('signin')
         }
       }
