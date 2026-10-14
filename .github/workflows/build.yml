@@ -62,7 +62,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      # ubuntu-latest ships with the Android SDK (ANDROID_HOME is set); Gradle fetches anything else it needs.
       - run: npm ci
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 1
