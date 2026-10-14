@@ -161,15 +161,18 @@ export function Popover({
   className?: string
 }): ReactNode {
   const ref = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const [pos, setPos] = useState<{ left: number; top: number; up: boolean } | null>(null)
 
   useLayoutEffect(() => {
     if (!open || !anchor.current) return
     const a = anchor.current.getBoundingClientRect()
     const w = ref.current?.offsetWidth ?? 240
+    const h = ref.current?.offsetHeight ?? 0
     let left = align === 'end' ? a.right - w : a.left
     left = Math.max(8, Math.min(left, window.innerWidth - w - 8))
-    setPos({ left, top: a.bottom + 6 })
+    // Open upward when there is no room below (e.g. the account button at the bottom of the sidebar).
+    const up = a.bottom + 6 + h > window.innerHeight - 8 && a.top - 6 - h >= 8
+    setPos({ left, top: up ? a.top - 6 - h : a.bottom + 6, up })
   }, [open, anchor, align])
 
   useEffect(() => {
@@ -198,7 +201,7 @@ export function Popover({
         <motion.div
           ref={ref}
           className={`popover ${className}`}
-          style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, transformOrigin: align === 'end' ? 'top right' : 'top left' }}
+          style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, transformOrigin: `${pos?.up ? 'bottom' : 'top'} ${align === 'end' ? 'right' : 'left'}` }}
           {...pop}
         >
           {children}
