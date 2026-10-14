@@ -8,6 +8,9 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -31,9 +34,15 @@ jobs:
         run: npm run ${{ matrix.script }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-      - uses: actions/upload-artifact@v4
-        with:
-          name: notes-${{ matrix.os }}
-          path: |
-            release/*.exe
-            release/*.dmg
+      # Installers go on the GitHub release for the package.json version (artifacts would use the account's
+      # shared storage quota). Re-running replaces the files.
+      - name: Upload to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          tag="v$(node -p "require('./package.json').version")"
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes "Windows installer (.exe) and universal Mac app (.dmg). Unsigned: see the README for first-launch steps." || true
+          files=(release/*.exe release/*.dmg)
+          gh release upload "$tag" "${files[@]}" --clobber

@@ -53,8 +53,8 @@ npm run dist:mac        # → release/Notes-<version>-universal.dmg (Apple silic
 
 Later updates: `git pull && npm ci && npm run dist:mac`.
 
-**Or let GitHub build it:** Actions → **Build apps** → **Run workflow**, then download `notes-macos-latest`
-from the finished run.
+**Or let GitHub build it:** Actions → **Build apps** → **Run workflow**, then download the `.dmg` from the repository's
+**Releases** page (also: `gh release download -R zain-curricular/win-notes -p "*.dmg"`).
 
 **Install:** open the `.dmg`, drag **Notes** into Applications. The app is unsigned, so a downloaded copy is
 blocked the first time: run `xattr -cr /Applications/Notes.app` in Terminal, or try to open it once and click
