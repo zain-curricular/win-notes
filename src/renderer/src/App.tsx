@@ -8,7 +8,8 @@ import { Sidebar } from './components/Sidebar'
 import { Gallery, ListHeader, NoteList } from './components/NoteList'
 import { EditorPane } from './components/Editor'
 import { AuthScreen } from './components/Auth'
-import { ContextMenuLayer, isMac, isMod } from './components/ui'
+import { ContextMenuLayer } from './components/ui'
+import { shortcuts, type AppShortcutId } from './lib/shortcuts'
 
 const MODE_KEY = 'win-notes:mode'
 
@@ -16,37 +17,19 @@ function useAppShortcuts(): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       const s = useStore.getState()
-      const key = e.key.toLowerCase()
-      // Sidebar: Ctrl-Cmd-S on Mac, Ctrl-Alt-S on Windows.
-      if (key === 's' && (isMac ? e.metaKey && e.ctrlKey : e.ctrlKey && e.altKey)) {
-        e.preventDefault()
-        s.toggleSidebar()
+      const on = (id: AppShortcutId): boolean => shortcuts.matches(e, id)
+      if (on('toggleSidebar')) s.toggleSidebar()
+      else if (on('newFolder')) s.createFolder()
+      else if (on('newNote')) s.createNote()
+      else if (on('search')) window.dispatchEvent(new Event('notes:focus-search'))
+      else if (on('listLayout')) s.setLayout('list')
+      else if (on('galleryLayout')) s.setLayout('gallery')
+      else if (on('duplicateNote') && s.selectedNoteId) s.duplicateNote(s.selectedNoteId)
+      else {
+        if (on('closeGallery') && s.layout === 'gallery' && s.galleryOpen) s.setGalleryOpen(false)
         return
       }
-      if (!isMod(e)) {
-        if (e.key === 'Escape' && s.layout === 'gallery' && s.galleryOpen) s.setGalleryOpen(false)
-        return
-      }
-      if (key === 'n' && e.shiftKey) {
-        e.preventDefault()
-        s.createFolder()
-      } else if (key === 'n') {
-        e.preventDefault()
-        s.createNote()
-      } else if (key === 'f') {
-        // Cmd/Ctrl-F and Option-Cmd/Ctrl-Alt-F both search all notes.
-        e.preventDefault()
-        window.dispatchEvent(new Event('notes:focus-search'))
-      } else if (e.key === '1' && !e.shiftKey) {
-        e.preventDefault()
-        s.setLayout('list')
-      } else if (e.key === '2' && !e.shiftKey) {
-        e.preventDefault()
-        s.setLayout('gallery')
-      } else if (key === 'd' && !e.shiftKey && s.selectedNoteId) {
-        e.preventDefault()
-        s.duplicateNote(s.selectedNoteId)
-      }
+      e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

@@ -7,6 +7,7 @@ import { TableKit } from '@tiptap/extension-table'
 import Highlight from '@tiptap/extension-highlight'
 import { Placeholder } from '@tiptap/extensions'
 import { insertTable, setStyle, toggleChecked, toggleList } from './commands'
+import { shortcuts } from '../lib/shortcuts'
 
 /** Lets a bulleted list render with dashes (macOS "Dashed List"). */
 const DashedList = Extension.create({
@@ -103,27 +104,27 @@ const NotesShortcuts = Extension.create({
   addKeyboardShortcuts() {
     const e = this.editor
     const inTable = (): boolean => e.isActive('table')
-    return {
-      'Mod-Shift-t': () => setStyle(e, 'title'),
-      'Mod-Shift-h': () => setStyle(e, 'heading'),
-      'Mod-Shift-j': () => setStyle(e, 'subheading'),
-      'Mod-Shift-b': () => setStyle(e, 'body'),
-      'Mod-Shift-m': () => setStyle(e, 'mono'),
-      'Mod-Shift-7': () => toggleList(e, 'bullet'),
-      'Mod-Shift-8': () => toggleList(e, 'dashed'),
-      'Mod-Shift-9': () => toggleList(e, 'ordered'),
-      'Mod-Shift-l': () => toggleList(e, 'task'),
-      'Mod-Shift-u': () => toggleChecked(e),
-      "Mod-'": () => e.chain().focus().toggleBlockquote().run(),
-      'Mod-l': () => e.chain().focus().setHorizontalRule().run(),
-      'Mod-Alt-t': () => insertTable(e),
-      'Mod-]': () => e.commands.sinkListItem('taskItem') || e.commands.sinkListItem('listItem'),
-      'Mod-[': () => e.commands.liftListItem('taskItem') || e.commands.liftListItem('listItem'),
-      'Mod-Alt-ArrowUp': () => inTable() && e.chain().focus().addRowBefore().run(),
-      'Mod-Alt-ArrowDown': () => inTable() && e.chain().focus().addRowAfter().run(),
-      'Mod-Alt-ArrowLeft': () => inTable() && e.chain().focus().addColumnBefore().run(),
-      'Mod-Alt-ArrowRight': () => inTable() && e.chain().focus().addColumnAfter().run()
-    }
+    return shortcuts.keymap({
+      styleTitle: () => setStyle(e, 'title'),
+      styleHeading: () => setStyle(e, 'heading'),
+      styleSubheading: () => setStyle(e, 'subheading'),
+      styleBody: () => setStyle(e, 'body'),
+      styleMono: () => setStyle(e, 'mono'),
+      bulletList: () => toggleList(e, 'bullet'),
+      dashedList: () => toggleList(e, 'dashed'),
+      numberedList: () => toggleList(e, 'ordered'),
+      checklist: () => toggleList(e, 'task'),
+      toggleChecked: () => toggleChecked(e),
+      blockQuote: () => e.chain().focus().toggleBlockquote().run(),
+      divider: () => e.chain().focus().setHorizontalRule().run(),
+      insertTable: () => insertTable(e),
+      indent: () => e.commands.sinkListItem('taskItem') || e.commands.sinkListItem('listItem'),
+      outdent: () => e.commands.liftListItem('taskItem') || e.commands.liftListItem('listItem'),
+      addRowBefore: () => inTable() && e.chain().focus().addRowBefore().run(),
+      addRowAfter: () => inTable() && e.chain().focus().addRowAfter().run(),
+      addColumnBefore: () => inTable() && e.chain().focus().addColumnBefore().run(),
+      addColumnAfter: () => inTable() && e.chain().focus().addColumnAfter().run()
+    })
   }
 })
 

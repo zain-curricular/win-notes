@@ -2,7 +2,8 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Cloud, CloudOff, Folder, FolderPlus, HardDrive, LogOut, PanelLeft, RefreshCw, Trash2, UserRound } from 'lucide-react'
 import { useStore, type View } from '../lib/store'
-import { isMac, kbd, openContextMenu, Popover, ToolButton } from './ui'
+import { openContextMenu, Popover, ToolButton } from './ui'
+import { shortcuts } from '../lib/shortcuts'
 
 const NOTE_MIME = 'application/x-note-id'
 
@@ -170,7 +171,7 @@ export function Sidebar({ email, onSignOut, onSignIn }: { email?: string; onSign
     <div className="sidebar">
       <div className="topbar sidebar-top">
         <div className="drag-spacer" />
-        <ToolButton label="Hide Sidebar" shortcut={isMac ? '⌃⌘S' : kbd('Alt', 'S')} onClick={toggleSidebar}>
+        <ToolButton label="Hide Sidebar" shortcut={shortcuts.label('toggleSidebar')} onClick={toggleSidebar}>
           <PanelLeft size={17} />
         </ToolButton>
       </div>
@@ -190,7 +191,7 @@ export function Sidebar({ email, onSignOut, onSignIn }: { email?: string; onSign
       </div>
 
       <div className="sidebar-bottom">
-        <button className="new-folder" onClick={() => createFolder()} title={`New Folder (${kbd('Shift', 'N')})`}>
+        <button className="new-folder" onClick={() => createFolder()} title={`New Folder (${shortcuts.label('newFolder')})`}>
           <FolderPlus size={16} />
           <span>New Folder</span>
         </button>

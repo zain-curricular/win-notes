@@ -4,22 +4,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Check, ChevronRight } from 'lucide-react'
 import { create } from 'zustand'
 
-export const isMac = window.appInfo?.platform === 'darwin'
-
-/** Formats a shortcut like ["Shift", "T"] as ⇧⌘T on Mac or Ctrl+Shift+T on Windows. */
-export function kbd(...keys: string[]): string {
-  if (isMac) {
-    const map: Record<string, string> = { Shift: '⇧', Alt: '⌥', Ctrl: '⌃', Up: '↑', Down: '↓', Left: '←', Right: '→' }
-    return [...keys.slice(0, -1).map((k) => map[k] ?? k), '⌘', map[keys.at(-1)!] ?? keys.at(-1)].join('')
-  }
-  return ['Ctrl', ...keys].join('+')
-}
-
-/** True when the platform's command key (Cmd / Ctrl) is held. */
-export function isMod(e: KeyboardEvent | React.KeyboardEvent): boolean {
-  return isMac ? e.metaKey : e.ctrlKey
-}
-
 export const pop = {
   initial: { opacity: 0, scale: 0.96, y: -4 },
   animate: { opacity: 1, scale: 1, y: 0 },

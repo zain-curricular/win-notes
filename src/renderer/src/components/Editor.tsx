@@ -37,7 +37,8 @@ import { onRemoteNote, useStore, type Note } from '../lib/store'
 import { fullDate } from '../lib/dates'
 import { hasBoxTable, normalizeHtml, plainTextToHtml } from '../lib/paste'
 import { toMarkdown } from '../lib/markdown'
-import { isMac, kbd, MenuList, Popover, ToolButton, type MenuItem } from './ui'
+import { MenuList, Popover, ToolButton, type MenuItem } from './ui'
+import { shortcuts, type EditorShortcutId } from '../lib/shortcuts'
 import { noteMenu } from './NoteList'
 
 function deriveMeta(editor: TiptapEditor): Pick<Note, 'title' | 'snippet' | 'body'> {
@@ -77,18 +78,18 @@ function handlePaste(view: TiptapEditor['view'], event: ClipboardEvent): boolean
 
 // ---------- Format menu ("Aa") ----------
 
-const STYLES: { style: BlockStyle; label: string; keys: string[] }[] = [
-  { style: 'title', label: 'Title', keys: ['Shift', 'T'] },
-  { style: 'heading', label: 'Heading', keys: ['Shift', 'H'] },
-  { style: 'subheading', label: 'Subheading', keys: ['Shift', 'J'] },
-  { style: 'body', label: 'Body', keys: ['Shift', 'B'] },
-  { style: 'mono', label: 'Monostyled', keys: ['Shift', 'M'] }
+const STYLES: { style: BlockStyle; label: string; shortcut: EditorShortcutId }[] = [
+  { style: 'title', label: 'Title', shortcut: 'styleTitle' },
+  { style: 'heading', label: 'Heading', shortcut: 'styleHeading' },
+  { style: 'subheading', label: 'Subheading', shortcut: 'styleSubheading' },
+  { style: 'body', label: 'Body', shortcut: 'styleBody' },
+  { style: 'mono', label: 'Monostyled', shortcut: 'styleMono' }
 ]
 
-const LISTS: { kind: Exclude<ListKind, 'task'>; label: string; marker: string; keys: string[] }[] = [
-  { kind: 'bullet', label: 'Bulleted List', marker: '•', keys: ['Shift', '7'] },
-  { kind: 'dashed', label: 'Dashed List', marker: '–', keys: ['Shift', '8'] },
-  { kind: 'ordered', label: 'Numbered List', marker: '1.', keys: ['Shift', '9'] }
+const LISTS: { kind: Exclude<ListKind, 'task'>; label: string; marker: string; shortcut: EditorShortcutId }[] = [
+  { kind: 'bullet', label: 'Bulleted List', marker: '•', shortcut: 'bulletList' },
+  { kind: 'dashed', label: 'Dashed List', marker: '–', shortcut: 'dashedList' },
+  { kind: 'ordered', label: 'Numbered List', marker: '1.', shortcut: 'numberedList' }
 ]
 
 function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => void }): ReactNode {
@@ -145,7 +146,7 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
         >
           <span className="format-check">{st.style === s.style && !st.list ? '✓' : ''}</span>
           <span className="format-label">{s.label}</span>
-          <span className="menu-shortcut">{kbd(...s.keys)}</span>
+          <span className="menu-shortcut">{shortcuts.label(s.shortcut)}</span>
         </button>
       ))}
       <div className="menu-sep" />
@@ -161,7 +162,7 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
             <span className="list-marker">{l.marker}</span>
             {l.label}
           </span>
-          <span className="menu-shortcut">{kbd(...l.keys)}</span>
+          <span className="menu-shortcut">{shortcuts.label(l.shortcut)}</span>
         </button>
       ))}
       <button
@@ -173,7 +174,7 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
         <span className="format-label">
           <span className="list-marker quote-marker">|</span>Block Quote
         </span>
-        <span className="menu-shortcut">{isMac ? "⌘'" : "Ctrl+'"}</span>
+        <span className="menu-shortcut">{shortcuts.label('blockQuote')}</span>
       </button>
     </div>
   )
@@ -199,10 +200,10 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
 
   const tableItems: MenuItem[] = editor
     ? [
-        { label: 'Add Row Above', shortcut: kbd('Alt', 'Up'), onSelect: () => editor.chain().focus().addRowBefore().run() },
-        { label: 'Add Row Below', shortcut: kbd('Alt', 'Down'), onSelect: () => editor.chain().focus().addRowAfter().run() },
-        { label: 'Add Column Before', shortcut: kbd('Alt', 'Left'), onSelect: () => editor.chain().focus().addColumnBefore().run() },
-        { label: 'Add Column After', shortcut: kbd('Alt', 'Right'), onSelect: () => editor.chain().focus().addColumnAfter().run() },
+        { label: 'Add Row Above', shortcut: shortcuts.label('addRowBefore'), onSelect: () => editor.chain().focus().addRowBefore().run() },
+        { label: 'Add Row Below', shortcut: shortcuts.label('addRowAfter'), onSelect: () => editor.chain().focus().addRowAfter().run() },
+        { label: 'Add Column Before', shortcut: shortcuts.label('addColumnBefore'), onSelect: () => editor.chain().focus().addColumnBefore().run() },
+        { label: 'Add Column After', shortcut: shortcuts.label('addColumnAfter'), onSelect: () => editor.chain().focus().addColumnAfter().run() },
         'separator',
         { label: 'Delete Row', onSelect: () => editor.chain().focus().deleteRow().run() },
         { label: 'Delete Column', onSelect: () => editor.chain().focus().deleteColumn().run() },
@@ -250,7 +251,7 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
           <ChevronLeft size={18} />
         </ToolButton>
       ) : null}
-      <ToolButton label="New Note" shortcut={kbd('N')} onClick={() => createNote()}>
+      <ToolButton label="New Note" shortcut={shortcuts.label('newNote')} onClick={() => createNote()}>
         <SquarePen size={17} />
       </ToolButton>
       <div className="toolbar-sep" />
@@ -259,7 +260,7 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
       </ToolButton>
       <ToolButton
         label="Checklist"
-        shortcut={kbd('Shift', 'L')}
+        shortcut={shortcuts.label('checklist')}
         active={st?.task}
         disabled={!editor || deleted}
         onClick={() => editor && toggleList(editor, 'task')}
@@ -268,7 +269,7 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
       </ToolButton>
       <ToolButton
         label={st?.table ? 'Table Options' : 'Table'}
-        shortcut={st?.table ? undefined : kbd('Alt', 'T')}
+        shortcut={st?.table ? undefined : shortcuts.label('insertTable')}
         buttonRef={tableRef}
         active={st?.table || tableOpen}
         disabled={!editor || deleted}
@@ -422,7 +423,7 @@ export function EditorPane({ onBack }: { onBack?: () => void }): ReactNode {
         ) : (
           <motion.div key="empty" className="editor-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <SquarePen size={34} strokeWidth={1.4} />
-            <div>Select a note or press {kbd('N')} to write a new one.</div>
+            <div>Select a note or press {shortcuts.label('newNote')} to write a new one.</div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -4,7 +4,8 @@ import { Folder, LayoutGrid, List, PanelLeft, Pin, SquarePen, Trash2 } from 'luc
 import { SearchField } from './SearchField'
 import { useStore, visibleNotes, type Note } from '../lib/store'
 import { groupLabel, rowDate } from '../lib/dates'
-import { isMac, kbd, openContextMenu, ToolButton, type MenuItem } from './ui'
+import { openContextMenu, ToolButton, type MenuItem } from './ui'
+import { shortcuts } from '../lib/shortcuts'
 
 const NOTE_MIME = 'application/x-note-id'
 
@@ -35,7 +36,7 @@ export function noteMenu(note: Note): MenuItem[] {
         ...folders.map((f) => ({ label: f.name, checked: note.folder_id === f.id, onSelect: () => s.moveNote(note.id, f.id) }))
       ]
     },
-    { label: 'Duplicate Note', shortcut: kbd('D'), onSelect: () => s.duplicateNote(note.id) },
+    { label: 'Duplicate Note', shortcut: shortcuts.label('duplicateNote'), onSelect: () => s.duplicateNote(note.id) },
     'separator',
     { label: 'Delete', icon: <Trash2 size={14} />, danger: true, onSelect: () => s.deleteNote(note.id) }
   ]
@@ -140,7 +141,7 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
   return (
     <div className="topbar list-top">
       {!sidebarOpen && withToggle ? (
-        <ToolButton label="Show Sidebar" shortcut={isMac ? '⌃⌘S' : kbd('Alt', 'S')} onClick={toggleSidebar}>
+        <ToolButton label="Show Sidebar" shortcut={shortcuts.label('toggleSidebar')} onClick={toggleSidebar}>
           <PanelLeft size={17} />
         </ToolButton>
       ) : null}
@@ -151,10 +152,10 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
         </div>
       </div>
       <div className="segmented">
-        <button className={layout === 'list' ? 'on' : ''} title={`List (${kbd('1')})`} onClick={() => setLayout('list')}>
+        <button className={layout === 'list' ? 'on' : ''} title={`List (${shortcuts.label('listLayout')})`} onClick={() => setLayout('list')}>
           <List size={15} />
         </button>
-        <button className={layout === 'gallery' ? 'on' : ''} title={`Gallery (${kbd('2')})`} onClick={() => setLayout('gallery')}>
+        <button className={layout === 'gallery' ? 'on' : ''} title={`Gallery (${shortcuts.label('galleryLayout')})`} onClick={() => setLayout('gallery')}>
           <LayoutGrid size={15} />
         </button>
       </div>
@@ -169,7 +170,7 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
       )}
       {gallery ? (
         <>
-          <ToolButton label="New Note" shortcut={kbd('N')} onClick={() => createNote()}>
+          <ToolButton label="New Note" shortcut={shortcuts.label('newNote')} onClick={() => createNote()}>
             <SquarePen size={17} />
           </ToolButton>
           <SearchField />
