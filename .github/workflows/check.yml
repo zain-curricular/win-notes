@@ -1,0 +1,21 @@
+# Typecheck and tests on every pushed branch; a pull request shows the run for its head commit.
+# Installers are built by build.yml. The tests set the platform themselves, so one Linux runner covers the
+# Windows and Mac shortcut rules.
+name: Checks
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
