@@ -109,7 +109,8 @@ describe('editor keymap', () => {
     const expected = [
       'Mod-Shift-t', 'Mod-Shift-h', 'Mod-Shift-j', 'Mod-Shift-b', 'Mod-Shift-m', 'Mod-Shift-7', 'Mod-Shift-8', 'Mod-Shift-9',
       'Mod-Shift-l', 'Mod-Shift-u', "Mod-'", 'Mod-l', 'Mod-Alt-t', 'Mod-]', 'Mod-[', 'Mod-Alt-ArrowUp', 'Mod-Alt-ArrowDown',
-      'Mod-Alt-ArrowLeft', 'Mod-Alt-ArrowRight', 'Mod-{', 'Mod-Shift-[', 'Mod-|', 'Mod-Shift-\\', 'Mod-}', 'Mod-Shift-]'
+      'Mod-Alt-ArrowLeft', 'Mod-Alt-ArrowRight', 'Mod-{', 'Mod-Shift-[', 'Mod-|', 'Mod-Shift-\\', 'Mod-}', 'Mod-Shift-]',
+      'Alt-Shift-ArrowDown', 'Alt-Shift-ArrowUp'
     ]
     expect(Object.keys(shortcutsFor('mac').keymap(handlers))).toEqual(expected)
     expect(Object.keys(shortcutsFor('win').keymap(handlers))).toEqual(expected)

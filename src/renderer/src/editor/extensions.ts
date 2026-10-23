@@ -1,6 +1,6 @@
 import { Extension, type Extensions } from '@tiptap/core'
 import { keydownHandler } from '@tiptap/pm/keymap'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Plugin, PluginKey, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
@@ -10,6 +10,7 @@ import { Placeholder } from '@tiptap/extensions'
 import TextAlign from '@tiptap/extension-text-align'
 import { insertTable, setAlign, setStyle, toggleChecked, toggleList } from './commands'
 import { foldedRanges } from './folds'
+import { copyLines, LineClipboard } from './lineCopy'
 import { MultiSelect } from './multiSelection'
 import { SelectionMatches } from './selectionHighlight'
 import { shortcuts, shortcutsVersion } from '../lib/shortcuts'
@@ -101,6 +102,7 @@ const NotesShortcuts = Extension.create({
   addProseMirrorPlugins() {
     const e = this.editor
     const inTable = (): boolean => e.isActive('table')
+    const apply = (tr: Transaction | null): boolean => !!tr && (e.view.dispatch(tr), true)
     const handlers = {
       styleTitle: () => setStyle(e, 'title'),
       styleHeading: () => setStyle(e, 'heading'),
@@ -123,7 +125,9 @@ const NotesShortcuts = Extension.create({
       addColumnAfter: () => inTable() && e.chain().focus().addColumnAfter().run(),
       alignLeft: () => setAlign(e, 'left'),
       alignCenter: () => setAlign(e, 'center'),
-      alignRight: () => setAlign(e, 'right')
+      alignRight: () => setAlign(e, 'right'),
+      copyLineDown: () => apply(copyLines(e.state, 'down')),
+      copyLineUp: () => apply(copyLines(e.state, 'up'))
     }
     // Rebuilt only when a shortcut changes, since TipTap's own keyboard shortcuts are fixed once the editor exists.
     let built = -1
@@ -164,6 +168,7 @@ export function buildExtensions(): Extensions {
       placeholder: ({ editor, node, pos }) => (pos === 0 && editor.isEmpty && node.type.name === 'heading' ? 'Title' : '')
     }),
     NotesShortcuts,
+    LineClipboard,
     MultiSelect,
     SelectionMatches
   ]

@@ -69,7 +69,10 @@ export const SHORTCUTS = {
   // and ProseMirror then retries without Shift, which would reach Outdent.
   alignLeft: { title: 'Align Left', group: 'Alignment', scope: 'editor', keys: ['Mod-{', 'Mod-Shift-['] },
   alignCenter: { title: 'Align Center', group: 'Alignment', scope: 'editor', keys: ['Mod-|', 'Mod-Shift-\\'] },
-  alignRight: { title: 'Align Right', group: 'Alignment', scope: 'editor', keys: ['Mod-}', 'Mod-Shift-]'] }
+  alignRight: { title: 'Align Right', group: 'Alignment', scope: 'editor', keys: ['Mod-}', 'Mod-Shift-]'] },
+  // VS Code's Copy Line Down/Up on both platforms; on a Mac this takes over Option-Shift-arrow paragraph selection.
+  copyLineDown: { title: 'Copy Line Down', group: 'Lines', scope: 'editor', keys: ['Alt-Shift-ArrowDown'] },
+  copyLineUp: { title: 'Copy Line Up', group: 'Lines', scope: 'editor', keys: ['Alt-Shift-ArrowUp'] }
 } as const satisfies Record<string, Shortcut>
 
 export type ShortcutId = keyof typeof SHORTCUTS
