@@ -8,6 +8,8 @@ A macOS Notes–style app for Windows, Mac and Android, with folders and instant
 - Sign in with email and password; edits appear on your other computers in about half a second
 - Works offline: changes are saved locally and upload when you reconnect
 - Selecting text highlights its other copies in the note, and ⌘D adds the next copy to the selection, as in VS Code
+- VS Code line editing: copy a line down or up, and ⌘C / ⌘X with nothing selected copy or cut the whole line
+- Every shortcut can be changed in Keyboard Shortcuts (⌘,), saved on each computer
 - Pinning, Recently Deleted (30 days), drag notes onto folders, search with Match Case / Whole Word / Regular Expression, copy/export as Markdown
 - Windows 11 Mica / macOS vibrancy sidebar, light and dark mode
 
@@ -86,6 +88,19 @@ and copies the APK into `release/`. The APK is signed with the debug key, so it 
 After changing anything under `src/renderer/src/editor` or `mobile-editor/`, run `npm run build:editor`
 in the repo root so the mobile app picks it up.
 
+## Releasing
+
+1. Bump the version in `package.json`, and `version` + `versionCode` in `mobile/app.config.ts` (Android refuses to
+   install over the same `versionCode`).
+2. Tag and push: `git tag v<version> && git push origin v<version>`. **Build apps** builds the Windows installer, the Mac
+   app and the APK and attaches them to the GitHub release `v<version>`, with the install steps from
+   `.github/release-notes.md` followed by the changes since the previous release.
+3. The desktop apps show "Notes <version> is available" in the sidebar once the release is published.
+
+**Download page:** `site/` is a one-page download site that always links the newest release. Turn it on once in
+Settings → Pages → Source **GitHub Actions**, then run **Deploy download page** from the Actions tab. It is served at
+`https://zain-curricular.github.io/win-notes/` and redeploys when `site/` changes.
+
 ## Shortcuts
 
 Cmd on Mac, Ctrl on Windows.
@@ -94,6 +109,7 @@ Cmd on Mac, Ctrl on Windows.
 | --- | --- |
 | New note / new folder | ⌘N / ⇧⌘N |
 | Search | ⌘F |
+| Keyboard Shortcuts (change any key) | ⌘, |
 | Match Case / Whole Word / Regular Expression, in search | ⌥⌘C / ⌥⌘W / ⌥⌘R (Alt+C / Alt+W / Alt+R on Windows) |
 | List / gallery | ⌘1 / ⌘2 |
 | Zoom in / out / actual size | ⌘= / ⌘- / ⌘0 (⌘+ and the numpad keys also zoom) |
@@ -106,3 +122,5 @@ Cmd on Mac, Ctrl on Windows.
 | Align left / center / right | ⌘{ / ⌘\| / ⌘} |
 | Select next copy / all copies of the selection, in a note | ⌘D / ⌘F2 |
 | Duplicate note, outside a note | ⌘D |
+| Copy line down / up | ⇧⌥↓ / ⇧⌥↑ (Shift+Alt+Down / Up on Windows) |
+| Copy / cut the whole line, with nothing selected | ⌘C / ⌘X; ⌘V then pastes it as its own line |
