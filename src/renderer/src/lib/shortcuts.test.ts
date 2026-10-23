@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { extensions as coreExtensions, flattenExtensions, getExtensionField, type AnyExtension } from '@tiptap/core'
 import { buildExtensions } from '../editor/extensions'
 import { keysFor, parseKeys, SHORTCUTS, shortcutsFor, type Platform, type ShortcutId, type ShortcutScope } from './shortcuts'
@@ -33,6 +33,8 @@ function builtInShortcuts(platform: Platform): Map<string, string> {
     })
     for (const keys of Object.keys(add?.() ?? {})) found.set(combo(keys, platform), ext.name)
   }
+  // Also called while tests are collected, so the stub must not outlive this call.
+  vi.unstubAllGlobals()
   return found
 }
 
@@ -72,10 +74,6 @@ const press = (key: string, code: string, mods: Partial<Record<'ctrlKey' | 'altK
   shiftKey: false,
   metaKey: false,
   ...mods
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 describe.each<Platform>(['mac', 'win'])('shortcut registry on %s', (platform) => {
