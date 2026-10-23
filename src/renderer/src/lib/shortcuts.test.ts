@@ -9,7 +9,7 @@ const MAC_RESERVED = [
   'Alt-Shift-Mod-v', 'Mod-a', 'Mod-r', 'Alt-Mod-i', 'Ctrl-Mod-f', 'Ctrl-Mod-Space', 'Mod-Space', 'Mod-Tab', 'Mod-`'
 ]
 
-type Entry = { id: string; scope: ShortcutScope; keys: readonly string[]; replacesBuiltIn?: boolean }
+type Entry = { id: string; scope: ShortcutScope; keys: readonly string[]; replacesBuiltIn?: boolean; shadows?: string }
 
 function combo(keys: string, platform: Platform): string {
   const c = parseKeys(keys, platform)
@@ -38,20 +38,21 @@ function builtInShortcuts(platform: Platform): Map<string, string> {
 
 function conflicts(entries: Entry[], platform: Platform, builtIns: Map<string, string>, reserved: string[]): string[] {
   const problems: string[] = []
-  const owners = new Map<string, string>()
+  const owners = new Map<string, Entry>()
   const taken = new Set(reserved.map((k) => combo(k, platform)))
   for (const e of entries) {
     const replaced = e.keys.map((k) => builtIns.get(combo(k, platform))).filter(Boolean)
     for (const keys of e.keys) {
       const c = combo(keys, platform)
       const owner = owners.get(c)
-      if (owner) problems.push(`${e.id} and ${owner} both use ${c}`)
-      owners.set(c, e.id)
+      const declared = owner && (e.shadows === owner.id || owner.shadows === e.id)
+      if (owner && !declared) problems.push(`${e.id} and ${owner.id} both use ${c}`)
+      owners.set(c, e)
       if (taken.has(c)) problems.push(`${e.id} uses ${c}, which macOS takes first`)
     }
     // The editor sees a key before the app, so an app shortcut on a TipTap key never fires while typing.
     if (e.scope === 'app' && replaced.length) problems.push(`${e.id} is unreachable in a note: TipTap's ${replaced} uses it`)
-    if (e.scope === 'editor' && !!replaced.length !== !!e.replacesBuiltIn)
+    if ((e.scope === 'editor' || e.scope === 'selection') && !!replaced.length !== !!e.replacesBuiltIn)
       problems.push(replaced.length ? `${e.id} replaces TipTap's ${replaced} without saying so` : `${e.id} is marked replacesBuiltIn but replaces nothing`)
   }
   return problems
@@ -59,8 +60,8 @@ function conflicts(entries: Entry[], platform: Platform, builtIns: Map<string, s
 
 const registry = (platform: Platform): Entry[] =>
   (Object.keys(SHORTCUTS) as ShortcutId[]).map((id) => {
-    const s: { scope: ShortcutScope; replacesBuiltIn?: boolean } = SHORTCUTS[id]
-    return { id, scope: s.scope, keys: keysFor(id, platform), replacesBuiltIn: s.replacesBuiltIn }
+    const s: { scope: ShortcutScope; replacesBuiltIn?: boolean; shadows?: string } = SHORTCUTS[id]
+    return { id, scope: s.scope, keys: keysFor(id, platform), replacesBuiltIn: s.replacesBuiltIn, shadows: s.shadows }
   })
 
 const press = (key: string, code: string, mods: Partial<Record<'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey', boolean>> = {}) => ({
@@ -95,6 +96,15 @@ describe('conflict check', () => {
     expect(conflicts(entries, 'mac', builtIns, [])).toEqual(['b and a both use Meta-n'])
   })
 
+  it('allows only the overlap a shortcut declares', () => {
+    const entries: Entry[] = [
+      { id: 'a', scope: 'app', keys: ['Mod-d'] },
+      { id: 'b', scope: 'selection', keys: ['Mod-d'], shadows: 'a' },
+      { id: 'c', scope: 'selection', keys: ['Mod-d'], shadows: 'x' }
+    ]
+    expect(conflicts(entries, 'mac', builtIns, [])).toEqual(['c and b both use Meta-d'])
+  })
+
   it('reports a key macOS takes first', () => {
     expect(conflicts([{ id: 'a', scope: 'app', keys: ['Mod-r'] }], 'mac', builtIns, MAC_RESERVED)).toEqual([
       'a uses Meta-r, which macOS takes first'
@@ -118,19 +128,19 @@ describe('conflict check', () => {
 describe('labels', () => {
   const ids: ShortcutId[] = [
     'newNote', 'newFolder', 'toggleSidebar', 'styleTitle', 'bulletList', 'blockQuote', 'insertTable', 'addRowBefore', 'listLayout',
-    'matchCase'
+    'matchCase', 'selectNextMatch', 'selectAllMatches'
   ]
 
   it('use Mac symbols', () => {
     const { label } = shortcutsFor('mac')
-    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C'])
+    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C', '⌘D', '⌘F2'])
   })
 
   it('use Ctrl names on Windows', () => {
     const { label } = shortcutsFor('win')
     expect(ids.map(label)).toEqual([
       'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Alt+S', 'Ctrl+Shift+T', 'Ctrl+Shift+7', "Ctrl+'", 'Ctrl+Alt+T', 'Ctrl+Alt+Up', 'Ctrl+1',
-      'Alt+C'
+      'Alt+C', 'Ctrl+D', 'Ctrl+F2'
     ])
   })
 })

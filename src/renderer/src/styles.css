@@ -789,6 +789,30 @@ input {
   box-shadow: 0 0 0 1px var(--match-border);
   border-radius: 2px;
 }
+.note-content .multi-selection {
+  background: var(--accent-soft);
+}
+.note-content .multi-caret {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 1.2em;
+  vertical-align: text-bottom;
+}
+.note-content .multi-caret::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  border-left: 2px solid var(--accent);
+  animation: multi-caret-blink 1.06s steps(1) infinite;
+}
+@keyframes multi-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
 .note-content > * + * {
   margin-top: 0;
 }

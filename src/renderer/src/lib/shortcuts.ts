@@ -4,8 +4,10 @@
 export type Platform = 'mac' | 'win'
 type Keys = readonly string[] | { readonly mac: readonly string[]; readonly win: readonly string[] }
 // app: anywhere in the window. editor: ProseMirror keymap inside a note. search: while the search box has focus.
-export type ShortcutScope = 'app' | 'editor' | 'search'
-type Shortcut = { readonly scope: ShortcutScope; readonly keys: Keys; readonly replacesBuiltIn?: true }
+// selection: read from the key event inside a note before the keymap; `shadows` names the app shortcut it takes over
+// there, which is the only overlap the conflict test allows.
+export type ShortcutScope = 'app' | 'editor' | 'search' | 'selection'
+type Shortcut = { readonly scope: ShortcutScope; readonly keys: Keys; readonly replacesBuiltIn?: true; readonly shadows?: string }
 
 export const SHORTCUTS = {
   newNote: { scope: 'app', keys: ['Mod-n'] },
@@ -22,6 +24,11 @@ export const SHORTCUTS = {
   matchCase: { scope: 'search', keys: { mac: ['Alt-Mod-c'], win: ['Alt-c'] } },
   matchWholeWord: { scope: 'search', keys: { mac: ['Alt-Mod-w'], win: ['Alt-w'] } },
   useRegex: { scope: 'search', keys: { mac: ['Alt-Mod-r'], win: ['Alt-r'] } },
+
+  // VS Code's multi-cursor keys. Its Select All Occurrences key (Mod-Shift-l) is Checklist here, so this uses Mod-F2.
+  selectNextMatch: { scope: 'selection', keys: ['Mod-d'], shadows: 'duplicateNote' },
+  selectAllMatches: { scope: 'selection', keys: ['Mod-F2'] },
+  clearMultiSelection: { scope: 'selection', keys: ['Escape'], shadows: 'closeGallery' },
 
   styleTitle: { scope: 'editor', keys: ['Mod-Shift-t'] },
   styleHeading: { scope: 'editor', keys: ['Mod-Shift-h'], replacesBuiltIn: true },

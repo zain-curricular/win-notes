@@ -8,6 +8,7 @@ import Highlight from '@tiptap/extension-highlight'
 import { Placeholder } from '@tiptap/extensions'
 import { insertTable, setStyle, toggleChecked, toggleList } from './commands'
 import { foldedRanges } from './folds'
+import { MultiSelect } from './multiSelection'
 import { SelectionMatches } from './selectionHighlight'
 import { shortcuts } from '../lib/shortcuts'
 
@@ -140,6 +141,7 @@ export function buildExtensions(): Extensions {
       placeholder: ({ editor, node, pos }) => (pos === 0 && editor.isEmpty && node.type.name === 'heading' ? 'Title' : '')
     }),
     NotesShortcuts,
+    MultiSelect,
     SelectionMatches
   ]
 }
