@@ -1,0 +1,63 @@
+# Temporary check for the shortcut changes on chore/test-runner-and-shortcut-registry. Builds the app on a
+# Windows runner, presses shortcuts with real Windows key events (US, Polish and Russian layouts) and compares
+# the result with master. Local-only build: no Supabase settings are loaded.
+name: Windows shortcut check
+
+on:
+  push:
+    branches: [ci/windows-shortcut-check]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ref: chore/test-runner-and-shortcut-registry
+            target: branch
+          - ref: master
+            target: master
+    name: Windows (${{ matrix.target }})
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: harness
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.ref }}
+          path: app
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: node node_modules/electron/install.js
+        working-directory: app
+      # Any mode other than production skips .env.production, so the app runs local-only.
+      - run: npx electron-vite build --mode ci
+        working-directory: app
+      - name: Add Polish and Russian keyboard layouts
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $list = Get-WinUserLanguageList
+          $list.Add('pl-PL')
+          $list.Add('ru-RU')
+          Set-WinUserLanguageList $list -Force
+          Get-WinUserLanguageList | Format-Table LanguageTag, InputMethodTips
+      - name: Press shortcuts and check the results
+        run: node harness/.github/windows-check/drive.mjs app ${{ matrix.target }} results-${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-check-${{ matrix.target }}
+          path: results-${{ matrix.target }}
+          retention-days: 7
