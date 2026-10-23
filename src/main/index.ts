@@ -1,6 +1,7 @@
-import { app, BrowserWindow, Menu, ipcMain, nativeTheme, shell } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, nativeTheme, net, shell } from 'electron'
 import { release } from 'os'
 import { join, resolve } from 'path'
+import { isNewer } from './version'
 
 const isMac = process.platform === 'darwin'
 const isWin = process.platform === 'win32'
@@ -139,6 +140,21 @@ ipcMain.handle('take-deep-link', () => {
   const url = pendingLink
   pendingLink = null
   return url
+})
+
+const LATEST_RELEASE = 'https://api.github.com/repos/zain-curricular/win-notes/releases/latest'
+const RELEASES_PAGE = 'https://github.com/zain-curricular/win-notes/releases/latest'
+
+// Best effort: no network, GitHub rate limits or an odd reply all mean "no notice", never an error.
+ipcMain.handle('check-update', async () => {
+  try {
+    const res = await net.fetch(LATEST_RELEASE, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    const version = String(((await res.json()) as { tag_name?: unknown }).tag_name ?? '').replace(/^v/, '')
+    return isNewer(version, app.getVersion()) ? { version, url: RELEASES_PAGE } : null
+  } catch {
+    return null
+  }
 })
 
 ipcMain.on('set-zoom', (event, factor: unknown) => {

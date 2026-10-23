@@ -22,3 +22,8 @@ contextBridge.exposeInMainWorld('windowZoom', {
     return () => ipcRenderer.removeListener('zoom-menu', listener)
   }
 })
+
+contextBridge.exposeInMainWorld('updates', {
+  /** The newer release on GitHub, if there is one. */
+  check: (): Promise<{ version: string; url: string } | null> => ipcRenderer.invoke('check-update')
+})

@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Cloud, CloudOff, Folder, FolderPlus, HardDrive, Keyboard, LogOut, PanelLeft, RefreshCw, Trash2, UserRound } from 'lucide-react'
+import { Cloud, CloudOff, Download, Folder, FolderPlus, HardDrive, Keyboard, LogOut, PanelLeft, RefreshCw, Trash2, UserRound, X } from 'lucide-react'
 import { useStore, type View } from '../lib/store'
 import { openContextMenu, Popover, ToolButton } from './ui'
 import { shortcuts } from '../lib/shortcuts'
@@ -111,6 +111,28 @@ function SyncBadge(): ReactNode {
   )
 }
 
+const DISMISSED_UPDATE_KEY = 'win-notes:dismissed-update'
+
+function UpdateNotice(): ReactNode {
+  const [update, setUpdate] = useState<{ version: string; url: string } | null>(null)
+  useEffect(() => {
+    window.updates?.check().then((u) => {
+      if (u && localStorage.getItem(DISMISSED_UPDATE_KEY) !== u.version) setUpdate(u)
+    })
+  }, [])
+  if (!update) return null
+  return (
+    <div className="update-notice">
+      <a href={update.url} target="_blank" rel="noreferrer">
+        <Download size={14} /> Notes {update.version} is available
+      </a>
+      <button aria-label="Dismiss" onClick={() => (localStorage.setItem(DISMISSED_UPDATE_KEY, update.version), setUpdate(null))}>
+        <X size={13} />
+      </button>
+    </div>
+  )
+}
+
 function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () => void; onSignIn: () => void }): ReactNode {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLButtonElement>(null)
@@ -198,6 +220,7 @@ export function Sidebar({ email, onSignOut, onSignIn }: { email?: string; onSign
       </div>
 
       <div className="sidebar-bottom">
+        <UpdateNotice />
         <button className="new-folder" onClick={() => createFolder()} title={`New Folder (${shortcuts.label('newFolder')})`}>
           <FolderPlus size={16} />
           <span>New Folder</span>

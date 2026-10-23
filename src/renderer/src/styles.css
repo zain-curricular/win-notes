@@ -430,6 +430,34 @@ input {
 .pop-action.danger {
   color: var(--danger);
 }
+.update-notice {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 6px;
+  padding: 6px 6px 6px 10px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  font-size: 12px;
+}
+.update-notice a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+.update-notice button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--text-2);
+}
 .pop-action + .pop-action {
   margin-top: 6px;
 }
