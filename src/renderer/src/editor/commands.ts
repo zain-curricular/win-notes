@@ -3,8 +3,20 @@ import type { Editor } from '@tiptap/react'
 export type BlockStyle = 'title' | 'heading' | 'subheading' | 'body' | 'mono'
 export type ListKind = 'bullet' | 'dashed' | 'ordered' | 'task'
 export type HighlightColor = 'purple' | 'pink' | 'orange' | 'mint' | 'blue'
+export type Alignment = 'left' | 'center' | 'right' | 'justify'
 
 export const HIGHLIGHT_COLORS: HighlightColor[] = ['purple', 'pink', 'orange', 'mint', 'blue']
+export const ALIGNMENTS: Alignment[] = ['left', 'center', 'right', 'justify']
+
+export function currentAlign(editor: Editor): Alignment {
+  return ALIGNMENTS.find((a) => a !== 'left' && editor.isActive({ textAlign: a })) ?? 'left'
+}
+
+export function setAlign(editor: Editor, alignment: Alignment): boolean {
+  const chain = editor.chain().focus()
+  // Left stores nothing: right-to-left text keeps its natural side, and older app versions see no change.
+  return alignment === 'left' ? chain.unsetTextAlign().run() : chain.setTextAlign(alignment).run()
+}
 
 export function currentStyle(editor: Editor): BlockStyle {
   if (editor.isActive('heading', { level: 1 })) return 'title'

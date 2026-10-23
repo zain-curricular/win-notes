@@ -16,20 +16,27 @@ import {
   SquarePen,
   Strikethrough,
   Table,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignJustify,
+  TextAlignStart,
   Underline,
   X
 } from 'lucide-react'
 import { SearchField } from './SearchField'
 import { buildExtensions } from '../editor/extensions'
 import {
+  currentAlign,
   currentHighlight,
   currentList,
   currentStyle,
   HIGHLIGHT_COLORS,
   insertTable,
+  setAlign,
   setHighlight,
   setStyle,
   toggleList,
+  type Alignment,
   type BlockStyle,
   type ListKind
 } from '../editor/commands'
@@ -92,6 +99,13 @@ const LISTS: { kind: Exclude<ListKind, 'task'>; label: string; marker: string; s
   { kind: 'ordered', label: 'Numbered List', marker: '1.', shortcut: 'numberedList' }
 ]
 
+const ALIGN_BUTTONS: { align: Alignment; label: string; icon: ReactNode; shortcut?: EditorShortcutId }[] = [
+  { align: 'left', label: 'Align Left', icon: <TextAlignStart size={15} />, shortcut: 'alignLeft' },
+  { align: 'center', label: 'Align Center', icon: <TextAlignCenter size={15} />, shortcut: 'alignCenter' },
+  { align: 'right', label: 'Align Right', icon: <TextAlignEnd size={15} />, shortcut: 'alignRight' },
+  { align: 'justify', label: 'Justify', icon: <TextAlignJustify size={15} /> }
+]
+
 function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => void }): ReactNode {
   const st = useEditorState({
     editor,
@@ -103,7 +117,8 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
       italic: e.isActive('italic'),
       underline: e.isActive('underline'),
       strike: e.isActive('strike'),
-      highlight: currentHighlight(e)
+      highlight: currentHighlight(e),
+      align: currentAlign(e)
     })
   })
   return (
@@ -119,6 +134,20 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
         ).map(([name, icon, run, on]) => (
           <button key={name} className={on ? 'on' : ''} title={name} onMouseDown={(e) => e.preventDefault()} onClick={run}>
             {icon}
+          </button>
+        ))}
+      </div>
+      <div className="format-marks">
+        {ALIGN_BUTTONS.map((a) => (
+          <button
+            key={a.align}
+            className={st.align === a.align ? 'on' : ''}
+            title={a.shortcut ? `${a.label} (${shortcuts.label(a.shortcut)})` : a.label}
+            aria-label={a.label}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setAlign(editor, a.align)}
+          >
+            {a.icon}
           </button>
         ))}
       </div>

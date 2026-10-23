@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { extensions as coreExtensions, flattenExtensions, getExtensionField, type AnyExtension } from '@tiptap/core'
+import { keydownHandler } from '@tiptap/pm/keymap'
 import { buildExtensions } from '../editor/extensions'
 import { keysFor, parseKeys, SHORTCUTS, shortcutsFor, type Platform, type ShortcutId, type ShortcutScope } from './shortcuts'
 
@@ -126,19 +127,19 @@ describe('conflict check', () => {
 describe('labels', () => {
   const ids: ShortcutId[] = [
     'newNote', 'newFolder', 'toggleSidebar', 'styleTitle', 'bulletList', 'blockQuote', 'insertTable', 'addRowBefore', 'listLayout',
-    'matchCase', 'selectNextMatch', 'selectAllMatches'
+    'matchCase', 'selectNextMatch', 'selectAllMatches', 'alignLeft', 'alignCenter', 'alignRight'
   ]
 
   it('use Mac symbols', () => {
     const { label } = shortcutsFor('mac')
-    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C', '⌘D', '⌘F2'])
+    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C', '⌘D', '⌘F2', '⌘{', '⌘|', '⌘}'])
   })
 
   it('use Ctrl names on Windows', () => {
     const { label } = shortcutsFor('win')
     expect(ids.map(label)).toEqual([
       'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Alt+S', 'Ctrl+Shift+T', 'Ctrl+Shift+7', "Ctrl+'", 'Ctrl+Alt+T', 'Ctrl+Alt+Up', 'Ctrl+1',
-      'Alt+C', 'Ctrl+D', 'Ctrl+F2'
+      'Alt+C', 'Ctrl+D', 'Ctrl+F2', 'Ctrl+{', 'Ctrl+|', 'Ctrl+}'
     ])
   })
 })
@@ -151,10 +152,39 @@ describe('editor keymap', () => {
     const expected = [
       'Mod-Shift-t', 'Mod-Shift-h', 'Mod-Shift-j', 'Mod-Shift-b', 'Mod-Shift-m', 'Mod-Shift-7', 'Mod-Shift-8', 'Mod-Shift-9',
       'Mod-Shift-l', 'Mod-Shift-u', "Mod-'", 'Mod-l', 'Mod-Alt-t', 'Mod-]', 'Mod-[', 'Mod-Alt-ArrowUp', 'Mod-Alt-ArrowDown',
-      'Mod-Alt-ArrowLeft', 'Mod-Alt-ArrowRight'
+      'Mod-Alt-ArrowLeft', 'Mod-Alt-ArrowRight', 'Mod-{', 'Mod-Shift-[', 'Mod-|', 'Mod-Shift-\\', 'Mod-}', 'Mod-Shift-]'
     ]
     expect(Object.keys(shortcutsFor('mac').keymap(handlers))).toEqual(expected)
     expect(Object.keys(shortcutsFor('win').keymap(handlers))).toEqual(expected)
+  })
+})
+
+// macOS always reports Cmd+Shift+[ as {, so only Windows can send the plain bracket with Shift held.
+describe.each<[Platform, [string, number][], string[]]>([
+  ['mac', [['{', 219], ['}', 221], ['|', 220]], ['alignLeft', 'alignRight', 'alignCenter']],
+  [
+    'win',
+    [['{', 219], ['[', 219], ['}', 221], [']', 221], ['|', 220], ['\\', 220]],
+    ['alignLeft', 'alignLeft', 'alignRight', 'alignRight', 'alignCenter', 'alignCenter']
+  ]
+])('alignment keys through the ProseMirror keymap on %s', (platform, shiftBrackets, aligned) => {
+  const mac = platform === 'mac'
+  const fired: string[] = []
+  const handlers = Object.fromEntries(
+    (Object.keys(SHORTCUTS) as ShortcutId[]).filter((id) => SHORTCUTS[id].scope === 'editor').map((id) => [id, () => (fired.push(id), true)])
+  ) as Parameters<ReturnType<typeof shortcutsFor>['keymap']>[0]
+  // prosemirror-keymap resolves Mod from the host's navigator, so it is resolved here for the platform under test.
+  const bindings = Object.entries(shortcutsFor(platform).keymap(handlers)).map(([k, f]) => [k.replace('Mod-', mac ? 'Meta-' : 'Ctrl-'), f])
+  const handle = keydownHandler(Object.fromEntries(bindings))
+  const keyDown = (key: string, keyCode: number, shiftKey: boolean): string | undefined => {
+    fired.length = 0
+    handle({} as never, { key, keyCode, shiftKey, ctrlKey: !mac, altKey: false, metaKey: mac } as KeyboardEvent)
+    return fired[0]
+  }
+
+  it('reaches the alignment from Shift+bracket, never indent or outdent', () => {
+    expect(shiftBrackets.map(([key, code]) => keyDown(key, code, true))).toEqual(aligned)
+    expect([keyDown('[', 219, false), keyDown(']', 221, false)]).toEqual(['outdent', 'indent'])
   })
 })
 

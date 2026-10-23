@@ -6,7 +6,8 @@ import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
 import Highlight from '@tiptap/extension-highlight'
 import { Placeholder } from '@tiptap/extensions'
-import { insertTable, setStyle, toggleChecked, toggleList } from './commands'
+import TextAlign from '@tiptap/extension-text-align'
+import { insertTable, setAlign, setStyle, toggleChecked, toggleList } from './commands'
 import { foldedRanges } from './folds'
 import { MultiSelect } from './multiSelection'
 import { SelectionMatches } from './selectionHighlight'
@@ -118,7 +119,10 @@ const NotesShortcuts = Extension.create({
       addRowBefore: () => inTable() && e.chain().focus().addRowBefore().run(),
       addRowAfter: () => inTable() && e.chain().focus().addRowAfter().run(),
       addColumnBefore: () => inTable() && e.chain().focus().addColumnBefore().run(),
-      addColumnAfter: () => inTable() && e.chain().focus().addColumnAfter().run()
+      addColumnAfter: () => inTable() && e.chain().focus().addColumnAfter().run(),
+      alignLeft: () => setAlign(e, 'left'),
+      alignCenter: () => setAlign(e, 'center'),
+      alignRight: () => setAlign(e, 'right')
     })
   }
 })
@@ -137,6 +141,8 @@ export function buildExtensions(): Extensions {
     TaskItem.configure({ nested: true }),
     TableKit.configure({ table: { resizable: true, cellMinWidth: 60 } }),
     Highlight.configure({ multicolor: true }),
+    // Its own shortcuts take Checklist and Subheading keys; ours come from the shortcut registry.
+    TextAlign.extend({ addKeyboardShortcuts: () => ({}) }).configure({ types: ['heading', 'paragraph'] }),
     Placeholder.configure({
       placeholder: ({ editor, node, pos }) => (pos === 0 && editor.isEmpty && node.type.name === 'heading' ? 'Title' : '')
     }),

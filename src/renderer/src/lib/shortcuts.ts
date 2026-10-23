@@ -48,7 +48,12 @@ export const SHORTCUTS = {
   addRowBefore: { scope: 'editor', keys: ['Mod-Alt-ArrowUp'] },
   addRowAfter: { scope: 'editor', keys: ['Mod-Alt-ArrowDown'] },
   addColumnBefore: { scope: 'editor', keys: ['Mod-Alt-ArrowLeft'] },
-  addColumnAfter: { scope: 'editor', keys: ['Mod-Alt-ArrowRight'] }
+  addColumnAfter: { scope: 'editor', keys: ['Mod-Alt-ArrowRight'] },
+  // macOS text alignment keys. Each Shift+bracket is bound in both forms: Windows can report Ctrl+Shift+[ as "[",
+  // and ProseMirror then retries without Shift, which would reach Outdent.
+  alignLeft: { scope: 'editor', keys: ['Mod-{', 'Mod-Shift-['] },
+  alignCenter: { scope: 'editor', keys: ['Mod-|', 'Mod-Shift-\\'] },
+  alignRight: { scope: 'editor', keys: ['Mod-}', 'Mod-Shift-]'] }
 } as const satisfies Record<string, Shortcut>
 
 export type ShortcutId = keyof typeof SHORTCUTS
