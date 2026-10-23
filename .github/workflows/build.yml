@@ -35,7 +35,8 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
       # Installers go on the GitHub release for the package.json version (artifacts would use the account's
-      # shared storage quota). Re-running replaces the files.
+      # shared storage quota). Re-running replaces the files. Whichever job runs first creates the release with the
+      # install steps followed by GitHub's list of changes since the previous release.
       - name: Upload to release
         shell: bash
         env:
@@ -43,7 +44,7 @@ jobs:
         run: |
           shopt -s nullglob
           tag="v$(node -p "require('./package.json').version")"
-          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes "Windows installer (.exe) and universal Mac app (.dmg). Unsigned: see the README for first-launch steps." || true
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes-file .github/release-notes.md --generate-notes || true
           files=(release/*.exe release/*.dmg)
           gh release upload "$tag" "${files[@]}" --clobber
 
@@ -75,5 +76,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="v$(node -p "require('./package.json').version")"
-          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes "Windows installer (.exe), universal Mac app (.dmg) and Android app (.apk). Unsigned: see the README for first-launch steps." || true
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --title "Notes $tag" --notes-file .github/release-notes.md --generate-notes || true
           gh release upload "$tag" release/*.apk --clobber

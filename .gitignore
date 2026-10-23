@@ -5,3 +5,4 @@ release
 .env.local
 .env.supabase.local
 .env.*.local
+site/icon.png
