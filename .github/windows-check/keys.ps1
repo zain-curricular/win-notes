@@ -18,10 +18,13 @@ public static class K {
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr pid);
   [DllImport("user32.dll")] public static extern IntPtr GetKeyboardLayout(uint thread);
+  [DllImport("user32.dll")] public static extern uint MapVirtualKey(uint code, uint mapType);
   public static void Key(ushort vk, bool up) {
     var i = new INPUT[1];
     i[0].type = 1;
     i[0].u.ki.wVk = vk;
+    // A physical keyboard always sends its scan code; the browser derives KeyboardEvent.code from it.
+    i[0].u.ki.wScan = (ushort)MapVirtualKey(vk, 0);
     // Right Alt (AltGr) is an extended key.
     i[0].u.ki.dwFlags = (up ? 2u : 0u) | (vk == 0xA5 ? 1u : 0u);
     SendInput(1, i, Marshal.SizeOf(typeof(INPUT)));

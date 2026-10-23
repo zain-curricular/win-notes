@@ -53,10 +53,14 @@ const keys = async (combo, layout = '') => {
   const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', join(here, 'keys.ps1'), '-Combo', combo]
   if (layout) args.push('-Layout', layout)
   const out = execFileSync('powershell', args, { encoding: 'utf8' })
-  appendFileSync(keyLog, `${combo || '(none)'} ${layout} -> ${out.trim().replace(/\s+/g, ' ')}\n`)
   await sleep(500)
+  const seen = await evaluate(`window.__keydowns.splice(0)`).catch(() => [])
+  appendFileSync(keyLog, `${combo || '(none)'} ${layout} -> ${out.trim().replace(/\s+/g, ' ')} | page saw ${JSON.stringify(seen)}\n`)
   return out
 }
+const recordKeydowns = () =>
+  evaluate(`window.__keydowns = []; window.addEventListener('keydown', (e) => window.__keydowns.push(
+    [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Meta', 'key=' + e.key, 'code=' + e.code].filter(Boolean).join('+')), true)`)
 const waitFor = async (expr) => {
   for (let i = 0; i < 50; i++) {
     if (await evaluate(expr).catch(() => false)) return
@@ -110,6 +114,7 @@ const step = async (name, fn) => {
 
 let s
 await waitFor(`!!document.querySelector('.shell .note-list')`)
+await recordKeydowns()
 await keys('', '00000409')
 await shot('01-start')
 
