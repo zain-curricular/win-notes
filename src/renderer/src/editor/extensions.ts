@@ -7,6 +7,7 @@ import { TableKit } from '@tiptap/extension-table'
 import Highlight from '@tiptap/extension-highlight'
 import { Placeholder } from '@tiptap/extensions'
 import { insertTable, setStyle, toggleChecked, toggleList } from './commands'
+import { foldedRanges } from './folds'
 import { shortcuts } from '../lib/shortcuts'
 
 /** Lets a bulleted list render with dashes (macOS "Dashed List"). */
@@ -66,16 +67,11 @@ const CollapsibleHeadings = Extension.create({
         key: new PluginKey('collapsibleHeadings'),
         props: {
           decorations(state) {
-            const decos: Decoration[] = []
-            let hiddenBelow: number | null = null
+            const folded = foldedRanges(state.doc)
+            const hidden = new Set(folded.map((r) => r.from))
+            const decos = folded.map((r) => Decoration.node(r.from, r.to, { class: 'fold-hidden' }))
             state.doc.forEach((node, offset) => {
-              const isHeading = node.type.name === 'heading'
-              if (isHeading && hiddenBelow !== null && node.attrs.level <= hiddenBelow) hiddenBelow = null
-              if (hiddenBelow !== null) {
-                decos.push(Decoration.node(offset, offset + node.nodeSize, { class: 'fold-hidden' }))
-                return
-              }
-              if (!isHeading) return
+              if (node.type.name !== 'heading' || hidden.has(offset)) return
               const collapsed = !!node.attrs.collapsed
               decos.push(
                 Decoration.widget(offset + 1, (view) => chevron(view, offset, collapsed), {
@@ -84,10 +80,7 @@ const CollapsibleHeadings = Extension.create({
                   key: `fold-${offset}-${collapsed}`
                 })
               )
-              if (collapsed) {
-                hiddenBelow = node.attrs.level
-                decos.push(Decoration.node(offset, offset + node.nodeSize, { class: 'is-folded' }))
-              }
+              if (collapsed) decos.push(Decoration.node(offset, offset + node.nodeSize, { class: 'is-folded' }))
             })
             return DecorationSet.create(state.doc, decos)
           }
