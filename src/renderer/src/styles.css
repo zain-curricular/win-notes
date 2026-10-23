@@ -47,6 +47,8 @@
   --hl-orange-bg: rgba(255, 149, 0, 0.18);
   --hl-mint-bg: rgba(0, 199, 190, 0.16);
   --hl-blue-bg: rgba(0, 122, 255, 0.14);
+  --match-bg: rgba(255, 199, 0, 0.18);
+  --match-border: rgba(201, 151, 0, 0.55);
 
   color-scheme: light;
 }
@@ -88,6 +90,8 @@
     --hl-orange-bg: rgba(255, 159, 10, 0.2);
     --hl-mint-bg: rgba(99, 230, 226, 0.16);
     --hl-blue-bg: rgba(10, 132, 255, 0.22);
+    --match-bg: rgba(255, 196, 0, 0.14);
+    --match-border: rgba(255, 204, 26, 0.45);
     color-scheme: dark;
   }
 }
@@ -779,6 +783,11 @@ input {
 }
 .note-content ::selection {
   background: var(--accent-soft);
+}
+.note-content .selection-match {
+  background: var(--match-bg);
+  box-shadow: 0 0 0 1px var(--match-border);
+  border-radius: 2px;
 }
 .note-content > * + * {
   margin-top: 0;
