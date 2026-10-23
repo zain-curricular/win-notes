@@ -3,11 +3,12 @@
 A macOS Notes–style app for Windows, Mac and Android, with folders and instant cloud sync through Supabase.
 
 - Three-pane Notes layout: folders sidebar, date-grouped note list (or gallery), editor
-- Notes text styles and shortcuts: Title, Heading, Subheading, Body, Monostyled, bulleted/dashed/numbered lists, checklists, block quotes, tables, highlights, collapsible headings
+- Notes text styles and shortcuts: Title, Heading, Subheading, Body, Monostyled, bulleted/dashed/numbered lists, checklists, block quotes, tables, highlights, text alignment, collapsible headings
 - Paste keeps formatting: rich text, Markdown, and the box-drawn tables Claude Code prints in a terminal all become real tables and lists
 - Sign in with email and password; edits appear on your other computers in about half a second
 - Works offline: changes are saved locally and upload when you reconnect
-- Pinning, Recently Deleted (30 days), drag notes onto folders, search, copy/export as Markdown
+- Selecting text highlights its other copies in the note, and ⌘D adds the next copy to the selection, as in VS Code
+- Pinning, Recently Deleted (30 days), drag notes onto folders, search with Match Case / Whole Word / Regular Expression, copy/export as Markdown
 - Windows 11 Mica / macOS vibrancy sidebar, light and dark mode
 
 ## Set up the cloud (once)
@@ -93,6 +94,7 @@ Cmd on Mac, Ctrl on Windows.
 | --- | --- |
 | New note / new folder | ⌘N / ⇧⌘N |
 | Search | ⌘F |
+| Match Case / Whole Word / Regular Expression, in search | ⌥⌘C / ⌥⌘W / ⌥⌘R (Alt+C / Alt+W / Alt+R on Windows) |
 | List / gallery | ⌘1 / ⌘2 |
 | Toggle sidebar | ⌃⌘S (Ctrl+Alt+S on Windows) |
 | Title / Heading / Subheading / Body / Monostyled | ⇧⌘T / ⇧⌘H / ⇧⌘J / ⇧⌘B / ⇧⌘M |
@@ -100,4 +102,6 @@ Cmd on Mac, Ctrl on Windows.
 | Checklist / tick item | ⇧⌘L / ⇧⌘U |
 | Block quote / divider / table | ⌘' / ⌘L / ⌥⌘T |
 | Table rows and columns | ⌥⌘ + arrow keys |
-| Duplicate note | ⌘D |
+| Align left / center / right | ⌘{ / ⌘\| / ⌘} |
+| Select next copy / all copies of the selection, in a note | ⌘D / ⌘F2 |
+| Duplicate note, outside a note | ⌘D |
