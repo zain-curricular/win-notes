@@ -10,6 +10,7 @@ import { EditorPane } from './components/Editor'
 import { AuthScreen } from './components/Auth'
 import { ContextMenuLayer } from './components/ui'
 import { shortcuts, type AppShortcutId } from './lib/shortcuts'
+import { applyZoom, savedZoom, stepZoom } from './lib/zoom'
 
 const MODE_KEY = 'win-notes:mode'
 
@@ -33,6 +34,24 @@ function useAppShortcuts(): void {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [])
+}
+
+function useZoom(): void {
+  useEffect(() => {
+    const step = (direction: 1 | -1 | 0): void => applyZoom(direction ? stepZoom(savedZoom(), direction) : 1)
+    const onKey = (e: KeyboardEvent): void => {
+      const direction = shortcuts.matches(e, 'zoomIn') ? 1 : shortcuts.matches(e, 'zoomOut') ? -1 : shortcuts.matches(e, 'resetZoom') ? 0 : null
+      if (direction === null) return
+      e.preventDefault()
+      step(direction)
+    }
+    window.addEventListener('keydown', onKey)
+    const offMenu = window.windowZoom?.onMenu(step)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      offMenu?.()
+    }
   }, [])
 }
 
@@ -86,6 +105,7 @@ export default function App(): ReactNode {
   const [session, setSession] = useState<Session | null | undefined>(supabase ? undefined : null)
   const [localMode, setLocalMode] = useState(() => localStorage.getItem(MODE_KEY) === 'local')
   const [authNotice, setAuthNotice] = useState<string | null>(null)
+  useZoom()
 
   // Confirmation emails open winnotes://auth-callback#access_token=…&refresh_token=…
   useEffect(() => {

@@ -7,6 +7,7 @@ const isWin = process.platform === 'win32'
 // Windows 11 is build 22000+; Mica is only available there.
 const hasMica = isWin && Number(release().split('.')[2] ?? 0) >= 22000
 const TOOLBAR_HEIGHT = 52
+let zoom = 1
 
 // Testing aid: NOTES_PROFILE runs an isolated copy (its own data and single-instance lock),
 // NOTES_CDP_PORT exposes the DevTools protocol for automated checks.
@@ -47,9 +48,12 @@ function overlayColors(): Electron.TitleBarOverlayOptions {
   return {
     color: dark ? '#1e1e1e' : '#ffffff',
     symbolColor: dark ? '#e5e5e7' : '#1d1d1f',
-    height: TOOLBAR_HEIGHT
+    height: Math.round(TOOLBAR_HEIGHT * zoom)
   }
 }
+
+// The OS draws the traffic lights at a fixed size, so they move to stay centred in the zoomed toolbar.
+const trafficLightPosition = (): Electron.Point => ({ x: 18, y: Math.round((TOOLBAR_HEIGHT / 2) * zoom - 8) })
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -60,7 +64,7 @@ function createWindow(): void {
     show: false,
     title: 'Notes',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
-    ...(isMac ? { trafficLightPosition: { x: 18, y: 18 }, vibrancy: 'sidebar', visualEffectState: 'followWindow' } : {}),
+    ...(isMac ? { trafficLightPosition: trafficLightPosition(), vibrancy: 'sidebar', visualEffectState: 'followWindow' } : {}),
     ...(isWin ? { titleBarOverlay: overlayColors() } : {}),
     ...(hasMica ? { backgroundMaterial: 'mica' } : {}),
     backgroundColor: isMac || hasMica ? '#00000000' : nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
@@ -115,7 +119,16 @@ function buildMenu(): void {
       { role: 'editMenu' },
       {
         label: 'View',
-        submenu: [{ role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' }, { role: 'togglefullscreen' }]
+        submenu: [
+          { label: 'Actual Size', accelerator: 'CmdOrCtrl+0', click: () => mainWindow?.webContents.send('zoom-menu', 0) },
+          { label: 'Zoom In', accelerator: 'CmdOrCtrl+=', click: () => mainWindow?.webContents.send('zoom-menu', 1) },
+          { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-', click: () => mainWindow?.webContents.send('zoom-menu', -1) },
+          { type: 'separator' },
+          { role: 'reload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' }
+        ]
       },
       { role: 'windowMenu' }
     ])
@@ -126,6 +139,15 @@ ipcMain.handle('take-deep-link', () => {
   const url = pendingLink
   pendingLink = null
   return url
+})
+
+ipcMain.on('set-zoom', (event, factor: unknown) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win || typeof factor !== 'number' || !(factor >= 0.5 && factor <= 2)) return
+  zoom = factor
+  win.webContents.setZoomFactor(factor)
+  if (isWin) win.setTitleBarOverlay(overlayColors())
+  if (isMac) win.setWindowButtonPosition(trafficLightPosition())
 })
 
 ipcMain.on('app-info', (event) => {

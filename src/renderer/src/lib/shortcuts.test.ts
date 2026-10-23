@@ -127,19 +127,20 @@ describe('conflict check', () => {
 describe('labels', () => {
   const ids: ShortcutId[] = [
     'newNote', 'newFolder', 'toggleSidebar', 'styleTitle', 'bulletList', 'blockQuote', 'insertTable', 'addRowBefore', 'listLayout',
-    'matchCase', 'selectNextMatch', 'selectAllMatches', 'alignLeft', 'alignCenter', 'alignRight'
+    'matchCase', 'selectNextMatch', 'selectAllMatches', 'alignLeft', 'alignCenter', 'alignRight',
+    'zoomIn', 'zoomOut', 'resetZoom'
   ]
 
   it('use Mac symbols', () => {
     const { label } = shortcutsFor('mac')
-    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C', '⌘D', '⌘F2', '⌘{', '⌘|', '⌘}'])
+    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C', '⌘D', '⌘F2', '⌘{', '⌘|', '⌘}', '⌘=', '⌘-', '⌘0'])
   })
 
   it('use Ctrl names on Windows', () => {
     const { label } = shortcutsFor('win')
     expect(ids.map(label)).toEqual([
       'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Alt+S', 'Ctrl+Shift+T', 'Ctrl+Shift+7', "Ctrl+'", 'Ctrl+Alt+T', 'Ctrl+Alt+Up', 'Ctrl+1',
-      'Alt+C', 'Ctrl+D', 'Ctrl+F2', 'Ctrl+{', 'Ctrl+|', 'Ctrl+}'
+      'Alt+C', 'Ctrl+D', 'Ctrl+F2', 'Ctrl+{', 'Ctrl+|', 'Ctrl+}', 'Ctrl+=', 'Ctrl+-', 'Ctrl+0'
     ])
   })
 })
@@ -227,6 +228,16 @@ describe('app shortcut matching on Windows', () => {
     expect(matches(press('n', 'KeyN', { ctrlKey: true, altKey: true }), 'newNote')).toBe(false)
     expect(matches(press('F', 'KeyF', { ctrlKey: true, shiftKey: true }), 'search')).toBe(false)
     expect(matches(press('f', 'KeyF', { ctrlKey: true, altKey: true }), 'search')).toBe(true)
+  })
+
+  it('zooms from the US, German and numpad keys, and resets from 0 on French keyboards', () => {
+    expect(matches(press('=', 'Equal', { ctrlKey: true }), 'zoomIn')).toBe(true)
+    expect(matches(press('+', 'Equal', { ctrlKey: true, shiftKey: true }), 'zoomIn')).toBe(true)
+    expect(matches(press('+', 'BracketRight', { ctrlKey: true }), 'zoomIn')).toBe(true)
+    expect(matches(press('+', 'NumpadAdd', { ctrlKey: true }), 'zoomIn')).toBe(true)
+    expect(matches(press('-', 'NumpadSubtract', { ctrlKey: true }), 'zoomOut')).toBe(true)
+    expect(matches(press('à', 'Digit0', { ctrlKey: true }), 'resetZoom')).toBe(true)
+    expect(matches(press('=', 'Equal', { ctrlKey: true, altKey: true }), 'zoomIn')).toBe(false)
   })
 
   it('works on non-Latin layouts through the physical key', () => {

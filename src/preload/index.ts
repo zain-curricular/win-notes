@@ -12,3 +12,13 @@ contextBridge.exposeInMainWorld('deepLinks', {
     return () => ipcRenderer.removeListener('deep-link', listener)
   }
 })
+
+contextBridge.exposeInMainWorld('windowZoom', {
+  set: (factor: number): void => ipcRenderer.send('set-zoom', factor),
+  /** Zoom In, Zoom Out or Actual Size picked from the macOS View menu: 1, -1 or 0. */
+  onMenu: (cb: (direction: 1 | -1 | 0) => void): (() => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, direction: 1 | -1 | 0): void => cb(direction)
+    ipcRenderer.on('zoom-menu', listener)
+    return () => ipcRenderer.removeListener('zoom-menu', listener)
+  }
+})

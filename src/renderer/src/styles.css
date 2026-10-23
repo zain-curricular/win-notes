@@ -288,7 +288,8 @@ input {
 
 .platform-darwin .sidebar-top,
 .platform-darwin .shell[data-sidebar='closed'] .list-top {
-  padding-left: 84px;
+  /* The window buttons do not zoom with the page, so their space stays the same on screen. */
+  padding-left: calc(84px / var(--zoom, 1));
 }
 
 .sidebar-scroll {
@@ -583,7 +584,7 @@ input {
   min-height: 0;
 }
 .platform-win32 .gallery-wrap .list-top {
-  padding-right: 150px;
+  padding-right: calc(150px / var(--zoom, 1));
 }
 .gallery {
   flex: 1;
@@ -656,7 +657,7 @@ input {
   min-height: 0;
 }
 .platform-win32 .editor-top {
-  padding-right: 150px;
+  padding-right: calc(150px / var(--zoom, 1));
 }
 
 .search-field {

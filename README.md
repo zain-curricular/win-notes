@@ -96,6 +96,7 @@ Cmd on Mac, Ctrl on Windows.
 | Search | ⌘F |
 | Match Case / Whole Word / Regular Expression, in search | ⌥⌘C / ⌥⌘W / ⌥⌘R (Alt+C / Alt+W / Alt+R on Windows) |
 | List / gallery | ⌘1 / ⌘2 |
+| Zoom in / out / actual size | ⌘= / ⌘- / ⌘0 (⌘+ and the numpad keys also zoom) |
 | Toggle sidebar | ⌃⌘S (Ctrl+Alt+S on Windows) |
 | Title / Heading / Subheading / Body / Monostyled | ⇧⌘T / ⇧⌘H / ⇧⌘J / ⇧⌘B / ⇧⌘M |
 | Bulleted / dashed / numbered list | ⇧⌘7 / ⇧⌘8 / ⇧⌘9 |

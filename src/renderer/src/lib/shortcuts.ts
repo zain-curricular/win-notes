@@ -19,6 +19,10 @@ export const SHORTCUTS = {
   duplicateNote: { scope: 'app', keys: ['Mod-d'] },
   toggleSidebar: { scope: 'app', keys: { mac: ['Ctrl-Mod-s'], win: ['Ctrl-Alt-s'] } },
   closeGallery: { scope: 'app', keys: ['Escape'] },
+  // + needs Shift on US keyboards but not on German ones or the numpad, and Cmd+Shift can report the unshifted key.
+  zoomIn: { scope: 'app', keys: ['Mod-=', 'Mod-+', 'Mod-Shift-=', 'Mod-Shift-+'] },
+  zoomOut: { scope: 'app', keys: ['Mod--'] },
+  resetZoom: { scope: 'app', keys: ['Mod-0'] },
 
   // VS Code's find-widget toggles.
   matchCase: { scope: 'search', keys: { mac: ['Alt-Mod-c'], win: ['Alt-c'] } },
