@@ -116,17 +116,21 @@ describe('conflict check', () => {
 })
 
 describe('labels', () => {
-  const ids: ShortcutId[] = ['newNote', 'newFolder', 'toggleSidebar', 'styleTitle', 'bulletList', 'blockQuote', 'insertTable', 'addRowBefore', 'listLayout']
+  const ids: ShortcutId[] = [
+    'newNote', 'newFolder', 'toggleSidebar', 'styleTitle', 'bulletList', 'blockQuote', 'insertTable', 'addRowBefore', 'listLayout',
+    'matchCase'
+  ]
 
   it('use Mac symbols', () => {
     const { label } = shortcutsFor('mac')
-    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1'])
+    expect(ids.map(label)).toEqual(['⌘N', '⇧⌘N', '⌃⌘S', '⇧⌘T', '⇧⌘7', "⌘'", '⌥⌘T', '⌥⌘↑', '⌘1', '⌥⌘C'])
   })
 
   it('use Ctrl names on Windows', () => {
     const { label } = shortcutsFor('win')
     expect(ids.map(label)).toEqual([
-      'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Alt+S', 'Ctrl+Shift+T', 'Ctrl+Shift+7', "Ctrl+'", 'Ctrl+Alt+T', 'Ctrl+Alt+Up', 'Ctrl+1'
+      'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Alt+S', 'Ctrl+Shift+T', 'Ctrl+Shift+7', "Ctrl+'", 'Ctrl+Alt+T', 'Ctrl+Alt+Up', 'Ctrl+1',
+      'Alt+C'
     ])
   })
 })
@@ -163,6 +167,12 @@ describe('app shortcut matching on Mac', () => {
 
   it('reads Option-Cmd-F by its physical key, since Option turns f into ƒ', () => {
     expect(matches(press('ƒ', 'KeyF', { metaKey: true, altKey: true }), 'search')).toBe(true)
+  })
+
+  it('reads the Option-Cmd search toggles by their physical keys', () => {
+    expect(matches(press('ç', 'KeyC', { metaKey: true, altKey: true }), 'matchCase')).toBe(true)
+    expect(matches(press('∑', 'KeyW', { metaKey: true, altKey: true }), 'matchWholeWord')).toBe(true)
+    expect(matches(press('®', 'KeyR', { metaKey: true, altKey: true }), 'useRegex')).toBe(true)
   })
 
   it('closes the gallery on a plain Escape only', () => {
