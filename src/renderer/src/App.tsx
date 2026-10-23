@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { AnimatePresence, motion } from 'motion/react'
 import { supabase } from './lib/supabase'
@@ -9,7 +9,8 @@ import { Gallery, ListHeader, NoteList } from './components/NoteList'
 import { EditorPane } from './components/Editor'
 import { AuthScreen } from './components/Auth'
 import { ContextMenuLayer } from './components/ui'
-import { shortcuts, type AppShortcutId } from './lib/shortcuts'
+import { onShortcutsChange, shortcuts, shortcutsVersion, type AppShortcutId } from './lib/shortcuts'
+import { OPEN_SHORTCUTS, ShortcutSettings } from './components/ShortcutSettings'
 import { applyZoom, savedZoom, stepZoom } from './lib/zoom'
 
 const MODE_KEY = 'win-notes:mode'
@@ -23,6 +24,7 @@ function useAppShortcuts(): void {
       else if (on('newFolder')) s.createFolder()
       else if (on('newNote')) s.createNote()
       else if (on('search')) window.dispatchEvent(new Event('notes:focus-search'))
+      else if (on('openShortcuts')) window.dispatchEvent(new Event(OPEN_SHORTCUTS))
       else if (on('listLayout')) s.setLayout('list')
       else if (on('galleryLayout')) s.setLayout('gallery')
       else if (on('duplicateNote') && s.selectedNoteId) s.duplicateNote(s.selectedNoteId)
@@ -61,6 +63,8 @@ function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () =
   const galleryOpen = useStore((s) => s.galleryOpen)
   const hasSelection = useStore((s) => !!s.selectedNoteId)
   useAppShortcuts()
+  // Tooltips and menus show the current keys, so everything re-renders when one changes.
+  useSyncExternalStore(onShortcutsChange, shortcutsVersion)
 
   const galleryMode = layout === 'gallery'
   const showGalleryEditor = galleryMode && galleryOpen && hasSelection
@@ -97,6 +101,7 @@ function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () =
         )}
       </div>
       <ContextMenuLayer />
+      <ShortcutSettings />
     </div>
   )
 }

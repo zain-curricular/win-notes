@@ -1,5 +1,6 @@
 // Every keyboard shortcut in the app. Keys use ProseMirror's notation; "Mod" is Cmd on Mac and Ctrl elsewhere.
-// shortcuts.test.ts fails when two entries collide or an entry takes a key TipTap or the macOS menu already uses.
+// keybindings.ts refuses a key that collides with another entry, TipTap or the macOS menu; shortcuts.test.ts holds the
+// defaults to the same check.
 
 export type Platform = 'mac' | 'win'
 type Keys = readonly string[] | { readonly mac: readonly string[]; readonly win: readonly string[] }
@@ -7,57 +8,68 @@ type Keys = readonly string[] | { readonly mac: readonly string[]; readonly win:
 // selection: read from the key event inside a note before the keymap; `shadows` names the app shortcut it takes over
 // there, which is the only overlap the conflict test allows.
 export type ShortcutScope = 'app' | 'editor' | 'search' | 'selection'
-type Shortcut = { readonly scope: ShortcutScope; readonly keys: Keys; readonly replacesBuiltIn?: true; readonly shadows?: string }
+// fixed: Esc keys stay as they are, so a note or selection can always be left.
+type Shortcut = {
+  readonly title: string
+  readonly group: string
+  readonly scope: ShortcutScope
+  readonly keys: Keys
+  readonly replacesBuiltIn?: true
+  readonly shadows?: string
+  readonly fixed?: true
+}
 
 export const SHORTCUTS = {
-  newNote: { scope: 'app', keys: ['Mod-n'] },
-  newFolder: { scope: 'app', keys: ['Mod-Shift-n'] },
+  newNote: { title: 'New Note', group: 'Notes', scope: 'app', keys: ['Mod-n'] },
+  newFolder: { title: 'New Folder', group: 'Notes', scope: 'app', keys: ['Mod-Shift-n'] },
   // Option-Cmd-F is "search all notes" in macOS Notes; here both open the same search.
-  search: { scope: 'app', keys: ['Mod-f', 'Mod-Alt-f'] },
-  listLayout: { scope: 'app', keys: ['Mod-1'] },
-  galleryLayout: { scope: 'app', keys: ['Mod-2'] },
-  duplicateNote: { scope: 'app', keys: ['Mod-d'] },
-  toggleSidebar: { scope: 'app', keys: { mac: ['Ctrl-Mod-s'], win: ['Ctrl-Alt-s'] } },
-  closeGallery: { scope: 'app', keys: ['Escape'] },
+  search: { title: 'Search', group: 'Notes', scope: 'app', keys: ['Mod-f', 'Mod-Alt-f'] },
+  listLayout: { title: 'View as List', group: 'View', scope: 'app', keys: ['Mod-1'] },
+  galleryLayout: { title: 'View as Gallery', group: 'View', scope: 'app', keys: ['Mod-2'] },
+  duplicateNote: { title: 'Duplicate Note', group: 'Notes', scope: 'app', keys: ['Mod-d'] },
+  toggleSidebar: { title: 'Show or Hide Sidebar', group: 'View', scope: 'app', keys: { mac: ['Ctrl-Mod-s'], win: ['Ctrl-Alt-s'] } },
+  closeGallery: { title: 'Close Note in Gallery', group: 'View', scope: 'app', keys: ['Escape'], fixed: true },
   // + needs Shift on US keyboards but not on German ones or the numpad, and Cmd+Shift can report the unshifted key.
-  zoomIn: { scope: 'app', keys: ['Mod-=', 'Mod-+', 'Mod-Shift-=', 'Mod-Shift-+'] },
-  zoomOut: { scope: 'app', keys: ['Mod--'] },
-  resetZoom: { scope: 'app', keys: ['Mod-0'] },
+  zoomIn: { title: 'Zoom In', group: 'View', scope: 'app', keys: ['Mod-=', 'Mod-+', 'Mod-Shift-=', 'Mod-Shift-+'] },
+  zoomOut: { title: 'Zoom Out', group: 'View', scope: 'app', keys: ['Mod--'] },
+  resetZoom: { title: 'Actual Size', group: 'View', scope: 'app', keys: ['Mod-0'] },
+  // VS Code's Settings key.
+  openShortcuts: { title: 'Keyboard Shortcuts', group: 'Notes', scope: 'app', keys: ['Mod-,'] },
 
   // VS Code's find-widget toggles.
-  matchCase: { scope: 'search', keys: { mac: ['Alt-Mod-c'], win: ['Alt-c'] } },
-  matchWholeWord: { scope: 'search', keys: { mac: ['Alt-Mod-w'], win: ['Alt-w'] } },
-  useRegex: { scope: 'search', keys: { mac: ['Alt-Mod-r'], win: ['Alt-r'] } },
+  matchCase: { title: 'Match Case', group: 'Search box', scope: 'search', keys: { mac: ['Alt-Mod-c'], win: ['Alt-c'] } },
+  matchWholeWord: { title: 'Match Whole Word', group: 'Search box', scope: 'search', keys: { mac: ['Alt-Mod-w'], win: ['Alt-w'] } },
+  useRegex: { title: 'Use Regular Expression', group: 'Search box', scope: 'search', keys: { mac: ['Alt-Mod-r'], win: ['Alt-r'] } },
 
   // VS Code's multi-cursor keys. Its Select All Occurrences key (Mod-Shift-l) is Checklist here, so this uses Mod-F2.
-  selectNextMatch: { scope: 'selection', keys: ['Mod-d'], shadows: 'duplicateNote' },
-  selectAllMatches: { scope: 'selection', keys: ['Mod-F2'] },
-  clearMultiSelection: { scope: 'selection', keys: ['Escape'], shadows: 'closeGallery' },
+  selectNextMatch: { title: 'Select Next Copy', group: 'Selection', scope: 'selection', keys: ['Mod-d'], shadows: 'duplicateNote' },
+  selectAllMatches: { title: 'Select All Copies', group: 'Selection', scope: 'selection', keys: ['Mod-F2'] },
+  clearMultiSelection: { title: 'Back to One Cursor', group: 'Selection', scope: 'selection', keys: ['Escape'], shadows: 'closeGallery', fixed: true },
 
-  styleTitle: { scope: 'editor', keys: ['Mod-Shift-t'] },
-  styleHeading: { scope: 'editor', keys: ['Mod-Shift-h'], replacesBuiltIn: true },
-  styleSubheading: { scope: 'editor', keys: ['Mod-Shift-j'] },
-  styleBody: { scope: 'editor', keys: ['Mod-Shift-b'], replacesBuiltIn: true },
-  styleMono: { scope: 'editor', keys: ['Mod-Shift-m'] },
-  bulletList: { scope: 'editor', keys: ['Mod-Shift-7'], replacesBuiltIn: true },
-  dashedList: { scope: 'editor', keys: ['Mod-Shift-8'], replacesBuiltIn: true },
-  numberedList: { scope: 'editor', keys: ['Mod-Shift-9'], replacesBuiltIn: true },
-  checklist: { scope: 'editor', keys: ['Mod-Shift-l'] },
-  toggleChecked: { scope: 'editor', keys: ['Mod-Shift-u'], replacesBuiltIn: true },
-  blockQuote: { scope: 'editor', keys: ["Mod-'"] },
-  divider: { scope: 'editor', keys: ['Mod-l'] },
-  insertTable: { scope: 'editor', keys: ['Mod-Alt-t'] },
-  indent: { scope: 'editor', keys: ['Mod-]'] },
-  outdent: { scope: 'editor', keys: ['Mod-['] },
-  addRowBefore: { scope: 'editor', keys: ['Mod-Alt-ArrowUp'] },
-  addRowAfter: { scope: 'editor', keys: ['Mod-Alt-ArrowDown'] },
-  addColumnBefore: { scope: 'editor', keys: ['Mod-Alt-ArrowLeft'] },
-  addColumnAfter: { scope: 'editor', keys: ['Mod-Alt-ArrowRight'] },
+  styleTitle: { title: 'Title', group: 'Text styles', scope: 'editor', keys: ['Mod-Shift-t'] },
+  styleHeading: { title: 'Heading', group: 'Text styles', scope: 'editor', keys: ['Mod-Shift-h'], replacesBuiltIn: true },
+  styleSubheading: { title: 'Subheading', group: 'Text styles', scope: 'editor', keys: ['Mod-Shift-j'] },
+  styleBody: { title: 'Body', group: 'Text styles', scope: 'editor', keys: ['Mod-Shift-b'], replacesBuiltIn: true },
+  styleMono: { title: 'Monostyled', group: 'Text styles', scope: 'editor', keys: ['Mod-Shift-m'] },
+  bulletList: { title: 'Bulleted List', group: 'Lists', scope: 'editor', keys: ['Mod-Shift-7'], replacesBuiltIn: true },
+  dashedList: { title: 'Dashed List', group: 'Lists', scope: 'editor', keys: ['Mod-Shift-8'], replacesBuiltIn: true },
+  numberedList: { title: 'Numbered List', group: 'Lists', scope: 'editor', keys: ['Mod-Shift-9'], replacesBuiltIn: true },
+  checklist: { title: 'Checklist', group: 'Lists', scope: 'editor', keys: ['Mod-Shift-l'] },
+  toggleChecked: { title: 'Tick Checklist Item', group: 'Lists', scope: 'editor', keys: ['Mod-Shift-u'], replacesBuiltIn: true },
+  blockQuote: { title: 'Block Quote', group: 'Insert', scope: 'editor', keys: ["Mod-'"] },
+  divider: { title: 'Divider', group: 'Insert', scope: 'editor', keys: ['Mod-l'] },
+  insertTable: { title: 'Table', group: 'Insert', scope: 'editor', keys: ['Mod-Alt-t'] },
+  indent: { title: 'Indent', group: 'Lists', scope: 'editor', keys: ['Mod-]'] },
+  outdent: { title: 'Outdent', group: 'Lists', scope: 'editor', keys: ['Mod-['] },
+  addRowBefore: { title: 'Add Row Above', group: 'Tables', scope: 'editor', keys: ['Mod-Alt-ArrowUp'] },
+  addRowAfter: { title: 'Add Row Below', group: 'Tables', scope: 'editor', keys: ['Mod-Alt-ArrowDown'] },
+  addColumnBefore: { title: 'Add Column Before', group: 'Tables', scope: 'editor', keys: ['Mod-Alt-ArrowLeft'] },
+  addColumnAfter: { title: 'Add Column After', group: 'Tables', scope: 'editor', keys: ['Mod-Alt-ArrowRight'] },
   // macOS text alignment keys. Each Shift+bracket is bound in both forms: Windows can report Ctrl+Shift+[ as "[",
   // and ProseMirror then retries without Shift, which would reach Outdent.
-  alignLeft: { scope: 'editor', keys: ['Mod-{', 'Mod-Shift-['] },
-  alignCenter: { scope: 'editor', keys: ['Mod-|', 'Mod-Shift-\\'] },
-  alignRight: { scope: 'editor', keys: ['Mod-}', 'Mod-Shift-]'] }
+  alignLeft: { title: 'Align Left', group: 'Alignment', scope: 'editor', keys: ['Mod-{', 'Mod-Shift-['] },
+  alignCenter: { title: 'Align Center', group: 'Alignment', scope: 'editor', keys: ['Mod-|', 'Mod-Shift-\\'] },
+  alignRight: { title: 'Align Right', group: 'Alignment', scope: 'editor', keys: ['Mod-}', 'Mod-Shift-]'] }
 } as const satisfies Record<string, Shortcut>
 
 export type ShortcutId = keyof typeof SHORTCUTS
@@ -66,8 +78,11 @@ export type AppShortcutId = ScopedId<'app'>
 export type EditorShortcutId = ScopedId<'editor'>
 export type SearchShortcutId = ScopedId<'search'>
 
+/** Keys a person picked in Keyboard Shortcuts, replacing an entry's defaults. */
+export type Overrides = Partial<Record<ShortcutId, readonly string[]>>
+
 export type KeyCombo = { key: string; ctrl: boolean; alt: boolean; shift: boolean; meta: boolean }
-type KeyEventLike = Pick<KeyboardEvent, 'key' | 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
+export type KeyEventLike = Pick<KeyboardEvent, 'key' | 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
 
 export function parseKeys(keys: string, platform: Platform): KeyCombo {
   const parts = keys.split(/-(?!$)/)
@@ -89,12 +104,34 @@ export function parseKeys(keys: string, platform: Platform): KeyCombo {
   return { ...combo, key }
 }
 
+// Shifted punctuation and the key it sits on, on the US layout that ProseMirror's keymap falls back to.
+const SHIFTED: Record<string, string> = {
+  '{': '[', '}': ']', '|': '\\', '+': '=', _: '-', ':': ';', '"': "'", '<': ',', '>': '.', '?': '/', '~': '`',
+  '!': '1', '@': '2', '#': '3', $: '4', '%': '5', '^': '6', '&': '7', '*': '8', '(': '9', ')': '0'
+}
+const PUNCTUATION_CODES: Record<string, string> = {
+  Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',',
+  Period: '.', Slash: '/', Backquote: '`'
+}
+
+/** One name per physical key press, so Mod-{ and Mod-Shift-[ count as the same key. */
+export function comboId(keys: string, platform: Platform): string {
+  const c = parseKeys(keys, platform)
+  const base = SHIFTED[c.key]
+  return [c.ctrl && 'Ctrl', c.alt && 'Alt', (c.shift || !!base) && 'Shift', c.meta && 'Meta', base ?? c.key].filter(Boolean).join('-')
+}
+
 const KEY_LABELS: Record<string, { mac: string; win: string }> = {
   ArrowUp: { mac: '↑', win: 'Up' },
   ArrowDown: { mac: '↓', win: 'Down' },
   ArrowLeft: { mac: '←', win: 'Left' },
   ArrowRight: { mac: '→', win: 'Right' },
-  Escape: { mac: 'Esc', win: 'Esc' }
+  Escape: { mac: 'Esc', win: 'Esc' },
+  Space: { mac: 'Space', win: 'Space' },
+  Enter: { mac: '↩', win: 'Enter' },
+  Backspace: { mac: '⌫', win: 'Backspace' },
+  Delete: { mac: '⌦', win: 'Delete' },
+  Tab: { mac: '⇥', win: 'Tab' }
 }
 
 function label(c: KeyCombo, platform: Platform): string {
@@ -103,8 +140,8 @@ function label(c: KeyCombo, platform: Platform): string {
   return [c.ctrl && 'Ctrl', c.alt && 'Alt', c.shift && 'Shift', key].filter(Boolean).join('+')
 }
 
-const physicalKey = (code: string): string =>
-  code.startsWith('Key') ? code.slice(3).toLowerCase() : code.startsWith('Digit') ? code.slice(5) : code
+export const physicalKey = (code: string): string =>
+  code.startsWith('Key') ? code.slice(3).toLowerCase() : code.startsWith('Digit') ? code.slice(5) : (PUNCTUATION_CODES[code] ?? code)
 
 function matches(e: KeyEventLike, c: KeyCombo, platform: Platform): boolean {
   if (e.ctrlKey !== c.ctrl || e.altKey !== c.alt || e.shiftKey !== c.shift || e.metaKey !== c.meta) return false
@@ -116,25 +153,48 @@ function matches(e: KeyEventLike, c: KeyCombo, platform: Platform): boolean {
   return physicalKey(e.code) === c.key
 }
 
-export function keysFor(id: ShortcutId, platform: Platform): readonly string[] {
+export function defaultKeys(id: ShortcutId, platform: Platform): readonly string[] {
   const keys: Keys = SHORTCUTS[id].keys
   return 'mac' in keys ? keys[platform] : keys
 }
 
-export function shortcutsFor(platform: Platform) {
+export function keysFor(id: ShortcutId, platform: Platform, overrides: Overrides = {}): readonly string[] {
+  return overrides[id] ?? defaultKeys(id, platform)
+}
+
+export const keyLabel = (keys: string, platform: Platform): string => label(parseKeys(keys, platform), platform)
+
+export function shortcutsFor(platform: Platform, overrides: () => Overrides = () => ({})) {
+  const keys = (id: ShortcutId): readonly string[] => keysFor(id, platform, overrides())
   return {
-    label: (id: ShortcutId): string => label(parseKeys(keysFor(id, platform)[0], platform), platform),
+    label: (id: ShortcutId): string => keyLabel(keys(id)[0], platform),
     /** For shortcuts read straight from key events; editor ones go through `keymap`. */
     matches: (e: KeyEventLike, id: Exclude<ShortcutId, EditorShortcutId>): boolean =>
-      keysFor(id, platform).some((k) => matches(e, parseKeys(k, platform), platform)),
+      keys(id).some((k) => matches(e, parseKeys(k, platform), platform)),
     /** ProseMirror keymap for the editor shortcuts; every one must have a handler. */
     keymap: (handlers: Record<EditorShortcutId, () => boolean>): Record<string, () => boolean> =>
-      Object.fromEntries(
-        (Object.keys(handlers) as EditorShortcutId[]).flatMap((id) => keysFor(id, platform).map((k) => [k, handlers[id]]))
-      )
+      Object.fromEntries((Object.keys(handlers) as EditorShortcutId[]).flatMap((id) => keys(id).map((k) => [k, handlers[id]])))
   }
 }
 
 // The Android editor runs outside Electron, has no appInfo, and uses Ctrl like Windows.
-const isMac = typeof window !== 'undefined' && window.appInfo?.platform === 'darwin'
-export const shortcuts = shortcutsFor(isMac ? 'mac' : 'win')
+export const platform: Platform = typeof window !== 'undefined' && window.appInfo?.platform === 'darwin' ? 'mac' : 'win'
+
+let overrides: Overrides = {}
+let version = 0
+const listeners = new Set<() => void>()
+
+export const currentOverrides = (): Overrides => overrides
+/** Bumped on every change, so key handlers and labels built from the table know to rebuild. */
+export const shortcutsVersion = (): number => version
+export function onShortcutsChange(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+export function setOverrides(next: Overrides): void {
+  overrides = next
+  version++
+  listeners.forEach((l) => l())
+}
+
+export const shortcuts = shortcutsFor(platform, currentOverrides)

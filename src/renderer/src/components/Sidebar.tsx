@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Cloud, CloudOff, Folder, FolderPlus, HardDrive, LogOut, PanelLeft, RefreshCw, Trash2, UserRound } from 'lucide-react'
+import { Cloud, CloudOff, Folder, FolderPlus, HardDrive, Keyboard, LogOut, PanelLeft, RefreshCw, Trash2, UserRound } from 'lucide-react'
 import { useStore, type View } from '../lib/store'
 import { openContextMenu, Popover, ToolButton } from './ui'
 import { shortcuts } from '../lib/shortcuts'
+import { OPEN_SHORTCUTS } from './ShortcutSettings'
 
 const NOTE_MIME = 'application/x-note-id'
 
@@ -123,6 +124,9 @@ function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignO
           <>
             <div className="account-email">{email}</div>
             <div className="account-hint">Notes sync instantly to every computer signed in to this account.</div>
+            <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_SHORTCUTS)))}>
+              <Keyboard size={14} /> Keyboard Shortcuts…
+            </button>
             <button className="pop-action danger" onClick={() => (setOpen(false), onSignOut())}>
               <LogOut size={14} /> Sign Out
             </button>
@@ -131,6 +135,9 @@ function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignO
           <>
             <div className="account-email">Not signed in</div>
             <div className="account-hint">Your notes are saved only on this computer.</div>
+            <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_SHORTCUTS)))}>
+              <Keyboard size={14} /> Keyboard Shortcuts…
+            </button>
             <button className="pop-action" onClick={() => (setOpen(false), onSignIn())}>
               <Cloud size={14} /> Sign In to Sync…
             </button>

@@ -1,4 +1,5 @@
 import { Extension, type Extensions } from '@tiptap/core'
+import { keydownHandler } from '@tiptap/pm/keymap'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
@@ -11,7 +12,7 @@ import { insertTable, setAlign, setStyle, toggleChecked, toggleList } from './co
 import { foldedRanges } from './folds'
 import { MultiSelect } from './multiSelection'
 import { SelectionMatches } from './selectionHighlight'
-import { shortcuts } from '../lib/shortcuts'
+import { shortcuts, shortcutsVersion } from '../lib/shortcuts'
 
 /** Lets a bulleted list render with dashes (macOS "Dashed List"). */
 const DashedList = Extension.create({
@@ -93,14 +94,14 @@ const CollapsibleHeadings = Extension.create({
   }
 })
 
-/** Apple's Notes shortcuts (Cmd on Mac, Ctrl on Windows). */
+/** Apple's Notes shortcuts (Cmd on Mac, Ctrl on Windows), plus any keys changed in Keyboard Shortcuts. */
 const NotesShortcuts = Extension.create({
   name: 'notesShortcuts',
   priority: 1000,
-  addKeyboardShortcuts() {
+  addProseMirrorPlugins() {
     const e = this.editor
     const inTable = (): boolean => e.isActive('table')
-    return shortcuts.keymap({
+    const handlers = {
       styleTitle: () => setStyle(e, 'title'),
       styleHeading: () => setStyle(e, 'heading'),
       styleSubheading: () => setStyle(e, 'subheading'),
@@ -123,7 +124,23 @@ const NotesShortcuts = Extension.create({
       alignLeft: () => setAlign(e, 'left'),
       alignCenter: () => setAlign(e, 'center'),
       alignRight: () => setAlign(e, 'right')
-    })
+    }
+    // Rebuilt only when a shortcut changes, since TipTap's own keyboard shortcuts are fixed once the editor exists.
+    let built = -1
+    let handle = keydownHandler({})
+    return [
+      new Plugin({
+        props: {
+          handleKeyDown(view, event) {
+            if (built !== shortcutsVersion()) {
+              handle = keydownHandler(shortcuts.keymap(handlers))
+              built = shortcutsVersion()
+            }
+            return handle(view, event)
+          }
+        }
+      })
+    ]
   }
 })
 

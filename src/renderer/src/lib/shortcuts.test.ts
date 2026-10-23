@@ -1,71 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
-import { extensions as coreExtensions, flattenExtensions, getExtensionField, type AnyExtension } from '@tiptap/core'
 import { keydownHandler } from '@tiptap/pm/keymap'
-import { buildExtensions } from '../editor/extensions'
-import { keysFor, parseKeys, SHORTCUTS, shortcutsFor, type Platform, type ShortcutId, type ShortcutScope } from './shortcuts'
+import {
+  builtInKeys,
+  checkKeys,
+  findConflicts,
+  loadKeybindings,
+  MAC_RESERVED,
+  recordKeys,
+  registryEntries,
+  reservedKeys,
+  saveKeys,
+  validOverrides,
+  type Entry
+} from './keybindings'
+import { currentOverrides, setOverrides, SHORTCUTS, shortcutsFor, type Platform, type ShortcutId } from './shortcuts'
 
-// Keys the macOS menu (roles in src/main/index.ts) or the system takes first, plus standard Mac window keys.
-const MAC_RESERVED = [
-  'Mod-q', 'Mod-h', 'Alt-Mod-h', 'Mod-m', 'Mod-w', 'Mod-z', 'Shift-Mod-z', 'Mod-x', 'Mod-c', 'Mod-v',
-  'Alt-Shift-Mod-v', 'Mod-a', 'Mod-r', 'Alt-Mod-i', 'Ctrl-Mod-f', 'Ctrl-Mod-Space', 'Mod-Space', 'Mod-Tab', 'Mod-`'
-]
-
-type Entry = { id: string; scope: ShortcutScope; keys: readonly string[]; replacesBuiltIn?: boolean; shadows?: string }
-
-function combo(keys: string, platform: Platform): string {
-  const c = parseKeys(keys, platform)
-  return [c.ctrl && 'Ctrl', c.alt && 'Alt', c.shift && 'Shift', c.meta && 'Meta', c.key].filter(Boolean).join('-')
-}
-
-/** Shortcuts TipTap binds itself, read from the extensions the editor actually loads. */
+/** TipTap's own keys as they are on `platform`: its core keymap adds Mac-only bindings when navigator says Mac. */
 function builtInShortcuts(platform: Platform): Map<string, string> {
-  // TipTap's core keymap adds Mac-only bindings when navigator says Mac.
   vi.stubGlobal('navigator', { platform: platform === 'mac' ? 'MacIntel' : 'Win32', userAgent: '' })
-  const found = new Map<string, string>()
-  const core = (Object.values(coreExtensions) as unknown[]).filter((v): v is AnyExtension => typeof v === 'object' && v !== null && 'config' in v)
-  for (const ext of flattenExtensions([...core, ...buildExtensions()])) {
-    if (ext.name === 'notesShortcuts') continue
-    const add = getExtensionField<(() => Record<string, unknown>) | undefined>(ext, 'addKeyboardShortcuts', {
-      name: ext.name,
-      options: ext.options,
-      storage: ext.storage,
-      editor: {} as never,
-      type: null as never
-    })
-    for (const keys of Object.keys(add?.() ?? {})) found.set(combo(keys, platform), ext.name)
-  }
+  const found = builtInKeys(platform)
   // Also called while tests are collected, so the stub must not outlive this call.
   vi.unstubAllGlobals()
   return found
 }
-
-function conflicts(entries: Entry[], platform: Platform, builtIns: Map<string, string>, reserved: string[]): string[] {
-  const problems: string[] = []
-  const owners = new Map<string, Entry>()
-  const taken = new Set(reserved.map((k) => combo(k, platform)))
-  for (const e of entries) {
-    const replaced = e.keys.map((k) => builtIns.get(combo(k, platform))).filter(Boolean)
-    for (const keys of e.keys) {
-      const c = combo(keys, platform)
-      const owner = owners.get(c)
-      const declared = owner && (e.shadows === owner.id || owner.shadows === e.id)
-      if (owner && !declared) problems.push(`${e.id} and ${owner.id} both use ${c}`)
-      owners.set(c, e)
-      if (taken.has(c)) problems.push(`${e.id} uses ${c}, which macOS takes first`)
-    }
-    // The editor sees a key before the app, so an app shortcut on a TipTap key never fires while typing.
-    if (e.scope === 'app' && replaced.length) problems.push(`${e.id} is unreachable in a note: TipTap's ${replaced} uses it`)
-    if ((e.scope === 'editor' || e.scope === 'selection') && !!replaced.length !== !!e.replacesBuiltIn)
-      problems.push(replaced.length ? `${e.id} replaces TipTap's ${replaced} without saying so` : `${e.id} is marked replacesBuiltIn but replaces nothing`)
-  }
-  return problems
-}
-
-const registry = (platform: Platform): Entry[] =>
-  (Object.keys(SHORTCUTS) as ShortcutId[]).map((id) => {
-    const s: { scope: ShortcutScope; replacesBuiltIn?: boolean; shadows?: string } = SHORTCUTS[id]
-    return { id, scope: s.scope, keys: keysFor(id, platform), replacesBuiltIn: s.replacesBuiltIn, shadows: s.shadows }
-  })
 
 const press = (key: string, code: string, mods: Partial<Record<'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey', boolean>> = {}) => ({
   key,
@@ -79,8 +36,7 @@ const press = (key: string, code: string, mods: Partial<Record<'ctrlKey' | 'altK
 
 describe.each<Platform>(['mac', 'win'])('shortcut registry on %s', (platform) => {
   it('has no conflicts', () => {
-    const reserved = platform === 'mac' ? MAC_RESERVED : []
-    expect(conflicts(registry(platform), platform, builtInShortcuts(platform), reserved)).toEqual([])
+    expect(findConflicts(registryEntries(platform), platform, builtInShortcuts(platform), reservedKeys(platform))).toEqual([])
   })
 })
 
@@ -92,7 +48,7 @@ describe('conflict check', () => {
       { id: 'a', scope: 'app', keys: ['Mod-n'] },
       { id: 'b', scope: 'editor', keys: ['Mod-n'] }
     ]
-    expect(conflicts(entries, 'mac', builtIns, [])).toEqual(['b and a both use Meta-n'])
+    expect(findConflicts(entries, 'mac', builtIns, [])).toEqual([{ kind: 'clash', id: 'b', with: 'a', key: 'Meta-n' }])
   })
 
   it('allows only the overlap a shortcut declares', () => {
@@ -101,12 +57,12 @@ describe('conflict check', () => {
       { id: 'b', scope: 'selection', keys: ['Mod-d'], shadows: 'a' },
       { id: 'c', scope: 'selection', keys: ['Mod-d'], shadows: 'x' }
     ]
-    expect(conflicts(entries, 'mac', builtIns, [])).toEqual(['c and b both use Meta-d'])
+    expect(findConflicts(entries, 'mac', builtIns, [])).toEqual([{ kind: 'clash', id: 'c', with: 'b', key: 'Meta-d' }])
   })
 
   it('reports a key macOS takes first', () => {
-    expect(conflicts([{ id: 'a', scope: 'app', keys: ['Mod-r'] }], 'mac', builtIns, MAC_RESERVED)).toEqual([
-      'a uses Meta-r, which macOS takes first'
+    expect(findConflicts([{ id: 'a', scope: 'app', keys: ['Mod-r'] }], 'mac', builtIns, MAC_RESERVED)).toEqual([
+      { kind: 'reserved', id: 'a', key: 'Meta-r' }
     ])
   })
 
@@ -116,10 +72,10 @@ describe('conflict check', () => {
       { id: 'b', scope: 'editor', keys: ['Mod-Shift-t'], replacesBuiltIn: true },
       { id: 'c', scope: 'app', keys: ['Mod-i'] }
     ]
-    expect(conflicts(entries, 'mac', builtIns, [])).toEqual([
-      "a replaces TipTap's bold without saying so",
-      'b is marked replacesBuiltIn but replaces nothing',
-      "c is unreachable in a note: TipTap's italic uses it"
+    expect(findConflicts(entries, 'mac', builtIns, [])).toEqual([
+      { kind: 'undeclared', id: 'a', builtIn: 'bold' },
+      { kind: 'stale', id: 'b' },
+      { kind: 'unreachable', id: 'c', builtIn: 'italic' }
     ])
   })
 })
@@ -248,5 +204,65 @@ describe('app shortcut matching on Windows', () => {
   it('leaves AltGr characters alone', () => {
     expect(matches(press('s', 'KeyS', { ctrlKey: true, altKey: true }), 'toggleSidebar')).toBe(true)
     expect(matches(press('ś', 'KeyS', { ctrlKey: true, altKey: true }), 'toggleSidebar')).toBe(false)
+  })
+})
+
+describe('changing a shortcut', () => {
+  const winBuiltIns = builtInShortcuts('win')
+  const check = (id: ShortcutId, keys: string[]) => checkKeys(id, keys, 'win', {}, winBuiltIns)
+
+  it('uses the new keys instead of the defaults', () => {
+    const { matches, label } = shortcutsFor('win', () => ({ duplicateNote: ['Mod-Shift-d'] }))
+    expect(matches(press('D', 'KeyD', { ctrlKey: true, shiftKey: true }), 'duplicateNote')).toBe(true)
+    expect(matches(press('d', 'KeyD', { ctrlKey: true }), 'duplicateNote')).toBe(false)
+    expect(label('duplicateNote')).toBe('Ctrl+Shift+D')
+  })
+
+  it('refuses a key another action, the editor or copy and paste already uses', () => {
+    expect(check('duplicateNote', ['Mod-n'])).toEqual({ kind: 'clash', with: 'newNote' })
+    expect(check('divider', ['Mod-Shift-['])).toEqual({ kind: 'clash', with: 'alignLeft' })
+    expect(checkKeys('blockQuote', ['Mod-Shift-;'], 'win', { divider: ['Mod-:'] }, winBuiltIns)).toEqual({ kind: 'clash', with: 'divider' })
+    expect(check('divider', ['Mod-b'])).toEqual({ kind: 'editor', builtIn: 'bold' })
+    expect(check('newNote', ['Mod-v'])).toEqual({ kind: 'reserved' })
+    expect(check('divider', ['Mod-Shift-k'])).toBeNull()
+  })
+
+  it('refuses keys that would type or move the cursor', () => {
+    expect(check('divider', ['k'])).toEqual({ kind: 'typing' })
+    expect(check('divider', ['Shift-ArrowDown'])).toEqual({ kind: 'typing' })
+    expect(checkKeys('divider', ['Alt-e'], 'mac', {}, builtInShortcuts('mac'))).toEqual({ kind: 'typing' })
+    expect(check('divider', ['Alt-e'])).toBeNull()
+    expect(check('divider', ['F6'])).toBeNull()
+  })
+
+  it('records the physical key, whatever the layout', () => {
+    expect(recordKeys(press('D', 'KeyD', { ctrlKey: true, shiftKey: true }), 'win')).toBe('Mod-Shift-d')
+    expect(recordKeys(press('د', 'KeyD', { ctrlKey: true }), 'win')).toBe('Mod-d')
+    expect(recordKeys(press('{', 'BracketLeft', { metaKey: true, shiftKey: true }), 'mac')).toBe('Mod-Shift-[')
+    expect(recordKeys(press('ArrowDown', 'ArrowDown', { altKey: true, shiftKey: true }), 'mac')).toBe('Alt-Shift-ArrowDown')
+    expect(recordKeys(press('+', 'NumpadAdd', { ctrlKey: true }), 'win')).toBe('Mod-+')
+    expect(recordKeys(press('Shift', 'ShiftLeft', { shiftKey: true }), 'win')).toBeNull()
+  })
+
+  it('keeps only saved keys that still make sense', () => {
+    const saved = { divider: ['Mod-Shift-k'], closeGallery: ['Mod-e'], gone: ['Mod-g'], newNote: 'Mod-n', search: ['k'] }
+    expect(validOverrides(saved, 'win')).toEqual({ divider: ['Mod-Shift-k'] })
+  })
+
+  it('remembers changed keys after a restart and resets them', () => {
+    const storage = new Map<string, string>()
+    vi.stubGlobal('localStorage', { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v) })
+    try {
+      saveKeys('divider', ['Mod-Shift-k'])
+      setOverrides({})
+      loadKeybindings('win')
+      expect(currentOverrides()).toEqual({ divider: ['Mod-Shift-k'] })
+      saveKeys('divider', null)
+      loadKeybindings('win')
+      expect(currentOverrides()).toEqual({})
+    } finally {
+      vi.unstubAllGlobals()
+      setOverrides({})
+    }
   })
 })
