@@ -3,7 +3,9 @@
 
 export type Platform = 'mac' | 'win'
 type Keys = readonly string[] | { readonly mac: readonly string[]; readonly win: readonly string[] }
-type Shortcut = { readonly scope: 'app' | 'editor'; readonly keys: Keys; readonly replacesBuiltIn?: true }
+// app: anywhere in the window. editor: ProseMirror keymap inside a note. search: while the search box has focus.
+export type ShortcutScope = 'app' | 'editor' | 'search'
+type Shortcut = { readonly scope: ShortcutScope; readonly keys: Keys; readonly replacesBuiltIn?: true }
 
 export const SHORTCUTS = {
   newNote: { scope: 'app', keys: ['Mod-n'] },
@@ -15,6 +17,11 @@ export const SHORTCUTS = {
   duplicateNote: { scope: 'app', keys: ['Mod-d'] },
   toggleSidebar: { scope: 'app', keys: { mac: ['Ctrl-Mod-s'], win: ['Ctrl-Alt-s'] } },
   closeGallery: { scope: 'app', keys: ['Escape'] },
+
+  // VS Code's find-widget toggles.
+  matchCase: { scope: 'search', keys: { mac: ['Alt-Mod-c'], win: ['Alt-c'] } },
+  matchWholeWord: { scope: 'search', keys: { mac: ['Alt-Mod-w'], win: ['Alt-w'] } },
+  useRegex: { scope: 'search', keys: { mac: ['Alt-Mod-r'], win: ['Alt-r'] } },
 
   styleTitle: { scope: 'editor', keys: ['Mod-Shift-t'] },
   styleHeading: { scope: 'editor', keys: ['Mod-Shift-h'], replacesBuiltIn: true },
@@ -41,6 +48,7 @@ export type ShortcutId = keyof typeof SHORTCUTS
 type ScopedId<S extends Shortcut['scope']> = { [K in ShortcutId]: (typeof SHORTCUTS)[K]['scope'] extends S ? K : never }[ShortcutId]
 export type AppShortcutId = ScopedId<'app'>
 export type EditorShortcutId = ScopedId<'editor'>
+export type SearchShortcutId = ScopedId<'search'>
 
 export type KeyCombo = { key: string; ctrl: boolean; alt: boolean; shift: boolean; meta: boolean }
 type KeyEventLike = Pick<KeyboardEvent, 'key' | 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>
@@ -100,7 +108,8 @@ export function keysFor(id: ShortcutId, platform: Platform): readonly string[] {
 export function shortcutsFor(platform: Platform) {
   return {
     label: (id: ShortcutId): string => label(parseKeys(keysFor(id, platform)[0], platform), platform),
-    matches: (e: KeyEventLike, id: AppShortcutId): boolean =>
+    /** For shortcuts read straight from key events; editor ones go through `keymap`. */
+    matches: (e: KeyEventLike, id: Exclude<ShortcutId, EditorShortcutId>): boolean =>
       keysFor(id, platform).some((k) => matches(e, parseKeys(k, platform), platform)),
     /** ProseMirror keymap for the editor shortcuts; every one must have a handler. */
     keymap: (handlers: Record<EditorShortcutId, () => boolean>): Record<string, () => boolean> =>

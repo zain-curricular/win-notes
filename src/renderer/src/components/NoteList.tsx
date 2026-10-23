@@ -120,10 +120,10 @@ function useListKeys(notes: Note[]): (e: React.KeyboardEvent) => void {
   }
 }
 
-function EmptyList({ view }: { view: string }): ReactNode {
+function EmptyList({ view, search }: { view: string; search: string }): ReactNode {
   return (
     <motion.div className="empty-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }}>
-      {view === 'deleted' ? 'No Recently Deleted Notes' : 'No Notes'}
+      {search.trim() ? 'No Results' : view === 'deleted' ? 'No Recently Deleted Notes' : 'No Notes'}
     </motion.div>
   )
 }
@@ -182,7 +182,7 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
 
 export function NoteList(): ReactNode {
   const state = useStore()
-  const notes = useMemo(() => visibleNotes(state), [state.notes, state.view, state.search, state.folders])
+  const notes = useMemo(() => visibleNotes(state), [state.notes, state.view, state.search, state.searchOptions, state.folders])
   const groups = useMemo(() => groupNotes(notes, state.view !== 'deleted'), [notes, state.view])
   const showFolder = state.view === 'all' || !!state.search.trim()
   const onKeyDown = useListKeys(notes)
@@ -191,7 +191,7 @@ export function NoteList(): ReactNode {
     <div className="note-list">
       <ListHeader withToggle />
       <div className="note-list-scroll" tabIndex={0} onKeyDown={onKeyDown}>
-        {notes.length === 0 ? <EmptyList view={state.view} /> : null}
+        {notes.length === 0 ? <EmptyList view={state.view} search={state.search} /> : null}
         <AnimatePresence initial={false}>
           {groups.flatMap((g) => [
             <motion.div key={`h-${g.label}`} layout="position" className="group-label" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -208,14 +208,14 @@ export function NoteList(): ReactNode {
 
 export function Gallery(): ReactNode {
   const state = useStore()
-  const notes = useMemo(() => visibleNotes(state), [state.notes, state.view, state.search, state.folders])
+  const notes = useMemo(() => visibleNotes(state), [state.notes, state.view, state.search, state.searchOptions, state.folders])
   const groups = useMemo(() => groupNotes(notes, state.view !== 'deleted'), [notes, state.view])
   const onKeyDown = useListKeys(notes)
   const { selectNote, setGalleryOpen } = useStore.getState()
 
   return (
     <div className="gallery" tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' ? setGalleryOpen(true) : onKeyDown(e))}>
-      {notes.length === 0 ? <EmptyList view={state.view} /> : null}
+      {notes.length === 0 ? <EmptyList view={state.view} search={state.search} /> : null}
       {groups.map((g) => (
         <section key={g.label}>
           <div className="group-label">{g.label}</div>

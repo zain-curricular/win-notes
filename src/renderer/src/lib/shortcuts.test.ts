@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { extensions as coreExtensions, flattenExtensions, getExtensionField, type AnyExtension } from '@tiptap/core'
 import { buildExtensions } from '../editor/extensions'
-import { keysFor, parseKeys, SHORTCUTS, shortcutsFor, type Platform, type ShortcutId } from './shortcuts'
+import { keysFor, parseKeys, SHORTCUTS, shortcutsFor, type Platform, type ShortcutId, type ShortcutScope } from './shortcuts'
 
 // Keys the macOS menu (roles in src/main/index.ts) or the system takes first, plus standard Mac window keys.
 const MAC_RESERVED = [
@@ -9,7 +9,7 @@ const MAC_RESERVED = [
   'Alt-Shift-Mod-v', 'Mod-a', 'Mod-r', 'Alt-Mod-i', 'Ctrl-Mod-f', 'Ctrl-Mod-Space', 'Mod-Space', 'Mod-Tab', 'Mod-`'
 ]
 
-type Entry = { id: string; scope: 'app' | 'editor'; keys: readonly string[]; replacesBuiltIn?: boolean }
+type Entry = { id: string; scope: ShortcutScope; keys: readonly string[]; replacesBuiltIn?: boolean }
 
 function combo(keys: string, platform: Platform): string {
   const c = parseKeys(keys, platform)
@@ -59,7 +59,7 @@ function conflicts(entries: Entry[], platform: Platform, builtIns: Map<string, s
 
 const registry = (platform: Platform): Entry[] =>
   (Object.keys(SHORTCUTS) as ShortcutId[]).map((id) => {
-    const s: { scope: 'app' | 'editor'; replacesBuiltIn?: boolean } = SHORTCUTS[id]
+    const s: { scope: ShortcutScope; replacesBuiltIn?: boolean } = SHORTCUTS[id]
     return { id, scope: s.scope, keys: keysFor(id, platform), replacesBuiltIn: s.replacesBuiltIn }
   })
 

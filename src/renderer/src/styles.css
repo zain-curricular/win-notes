@@ -670,8 +670,41 @@ input {
 }
 .search-field:focus-within,
 .search-field.has-text {
-  width: 230px;
+  width: 300px;
   box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.search-field.invalid {
+  box-shadow: 0 0 0 2px var(--danger);
+}
+.search-options {
+  display: none;
+  gap: 1px;
+  margin-right: -4px;
+}
+.search-field:focus-within .search-options,
+.search-field.has-text .search-options,
+.search-field.has-options .search-options {
+  display: inline-flex;
+}
+.search-options button {
+  border: 0;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-options button:hover {
+  background: var(--hover);
+  color: var(--text-2);
+}
+.search-options button.on {
+  background: var(--accent-soft);
+  color: var(--text);
 }
 .search-field input {
   flex: 1;

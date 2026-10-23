@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { JSONContent } from '@tiptap/react'
 import { time } from './dates'
+import { buildMatcher, DEFAULT_SEARCH_OPTIONS, type SearchOptions } from './searchQuery'
 
 export type Folder = {
   id: string
@@ -38,6 +39,7 @@ type Persisted = {
   selectedNoteId: string | null
   layout: 'list' | 'gallery'
   sidebarOpen: boolean
+  searchOptions: SearchOptions
 }
 
 type State = Persisted & {
@@ -52,6 +54,7 @@ type State = Persisted & {
   reset: () => void
   setView: (view: View) => void
   setSearch: (q: string) => void
+  setSearchOptions: (patch: Partial<SearchOptions>) => void
   setLayout: (layout: 'list' | 'gallery') => void
   setGalleryOpen: (open: boolean) => void
   toggleSidebar: () => void
@@ -95,7 +98,8 @@ const defaults: Persisted = {
   view: 'notes',
   selectedNoteId: null,
   layout: 'list',
-  sidebarOpen: true
+  sidebarOpen: true,
+  searchOptions: DEFAULT_SEARCH_OPTIONS
 }
 
 // ---- change listeners (sync engine + editor) ----
@@ -142,7 +146,8 @@ function saveNow(): void {
     view: s.view,
     selectedNoteId: s.selectedNoteId,
     layout: s.layout,
-    sidebarOpen: s.sidebarOpen
+    sidebarOpen: s.sidebarOpen,
+    searchOptions: s.searchOptions
   }
   try {
     localStorage.setItem(storageKey(s.userId), JSON.stringify(data))
@@ -195,19 +200,16 @@ export function notesInView(state: Pick<State, 'notes' | 'view' | 'folders'>, vi
   return list.sort((a, b) => time(b.updated_at) - time(a.updated_at))
 }
 
-export function searchNotes(notes: Record<string, Note>, q: string): Note[] {
-  const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
+export function searchNotes(notes: Record<string, Note>, q: string, options: SearchOptions = DEFAULT_SEARCH_OPTIONS): Note[] {
+  const matcher = buildMatcher(q, options)
+  if (!matcher.ok) return []
   return Object.values(notes)
-    .filter((n) => !n.deleted_at)
-    .filter((n) => {
-      const hay = `${n.title}\n${n.body}`.toLowerCase()
-      return terms.every((t) => hay.includes(t))
-    })
+    .filter((n) => !n.deleted_at && matcher.test(`${n.title}\n${n.body}`))
     .sort((a, b) => time(b.updated_at) - time(a.updated_at))
 }
 
 export function visibleNotes(state: State): Note[] {
-  return state.search.trim() ? searchNotes(state.notes, state.search) : notesInView(state)
+  return state.search.trim() ? searchNotes(state.notes, state.search, state.searchOptions) : notesInView(state)
 }
 
 // ---- store ----
@@ -233,6 +235,12 @@ export const useStore = create<State>()((set, get) => {
       pendingDeletes: [...s.pendingDeletes, { table: 'notes', id }],
       selectedNoteId: s.selectedNoteId === id ? null : s.selectedNoteId
     })
+  }
+
+  const selectFirstResultIfHidden = (): void => {
+    const s = get()
+    const list = visibleNotes(s)
+    if (s.search.trim() && !list.some((n) => n.id === s.selectedNoteId)) set({ selectedNoteId: list[0]?.id ?? null })
   }
 
   /** Picks the neighbour of a note in the current list, used after deleting or moving it away. */
@@ -295,9 +303,12 @@ export const useStore = create<State>()((set, get) => {
 
     setSearch: (search) => {
       set({ search })
-      const list = visibleNotes(get())
-      const sel = get().selectedNoteId
-      if (search.trim() && !list.some((n) => n.id === sel)) set({ selectedNoteId: list[0]?.id ?? null })
+      selectFirstResultIfHidden()
+    },
+    setSearchOptions: (patch) => {
+      set({ searchOptions: { ...get().searchOptions, ...patch } })
+      selectFirstResultIfHidden()
+      scheduleSave()
     },
 
     setLayout: (layout) => {
