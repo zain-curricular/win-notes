@@ -308,6 +308,10 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
 
 // ---------- Note editor ----------
 
+// Each focus request is used once. Otherwise every note opened afterwards (a search narrowing the list, an arrow
+// key in the list) would pull the cursor out of whatever the person is typing in.
+let handledFocusTick = 0
+
 function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor | null) => void }): ReactNode {
   const noteId = note.id
   const deleted = !!note.deleted_at
@@ -376,10 +380,15 @@ function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor
 
   const focusTick = useStore((s) => s.focusEditorTick)
   useEffect(() => {
-    if (!focusTick || !editor || deleted) return
+    if (!editor || focusTick === handledFocusTick) return
+    if (deleted) {
+      handledFocusTick = focusTick
+      return
+    }
     // Focus directly: TipTap's focus command waits for a repaint, which Windows pauses for covered windows.
     const t = setTimeout(() => {
       if (editor.isDestroyed) return
+      handledFocusTick = focusTick
       editor.view.dispatch(editor.state.tr.setSelection(Selection.atEnd(editor.state.doc)).scrollIntoView())
       editor.view.focus()
     }, 0)
