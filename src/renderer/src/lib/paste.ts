@@ -116,8 +116,7 @@ export function looksLikeMarkdown(text: string): boolean {
   return MARKDOWN_HINTS.some((re) => re.test(text))
 }
 
-/** Cleans up HTML so it maps onto the note's styles (used for both HTML and converted Markdown). */
-export function normalizeHtml(html: string): string {
+function normalizedDocument(html: string): Document {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   // macOS Notes has three heading styles; fold deeper headings into Subheading.
   doc.querySelectorAll('h4, h5, h6').forEach((h) => {
@@ -143,13 +142,20 @@ export function normalizeHtml(html: string): string {
     const alt = img.getAttribute('alt')
     img.replaceWith(alt ? doc.createTextNode(alt) : doc.createTextNode(''))
   })
-  return doc.body.innerHTML
+  return doc
 }
 
-/** Converts pasted plain text to rich HTML when it contains Markdown or box tables; null to paste as-is. */
-export function plainTextToHtml(text: string): string | null {
+/** Cleans up HTML so it maps onto the note's styles (used for both HTML and converted Markdown). */
+export const normalizeHtml = (html: string): string => normalizedDocument(html).body.innerHTML
+
+/**
+ * Converts pasted plain text to rich content when it contains Markdown or box tables; null to paste as-is.
+ * Markdown keeps raw HTML, so the result stays in an inert document: an element created in the live page loads
+ * media and runs handlers like onerror before ProseMirror's schema drops it.
+ */
+export function plainTextToDom(text: string): HTMLElement | null {
   const withTables = convertBoxTables(text)
   if (!looksLikeMarkdown(withTables)) return null
   const html = marked.parse(withTables, { gfm: true, breaks: false, async: false }) as string
-  return normalizeHtml(html)
+  return normalizedDocument(html).body
 }

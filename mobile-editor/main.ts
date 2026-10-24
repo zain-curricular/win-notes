@@ -19,7 +19,7 @@ import {
   type HighlightColor,
   type ListKind
 } from '../src/renderer/src/editor/commands'
-import { hasBoxTable, normalizeHtml, plainTextToHtml } from '../src/renderer/src/lib/paste'
+import { hasBoxTable, normalizeHtml, plainTextToDom } from '../src/renderer/src/lib/paste'
 import { toMarkdown } from '../src/renderer/src/lib/markdown'
 import './editor.css'
 
@@ -78,10 +78,8 @@ function handlePaste(view: Editor['view'], event: ClipboardEvent): boolean {
   if ($from.parent.type.name === 'codeBlock') return false
   const preferText = !html || (!/<table/i.test(html) && hasBoxTable(text))
   if (!preferText) return false
-  const converted = plainTextToHtml(text)
-  if (!converted) return false
-  const dom = document.createElement('div')
-  dom.innerHTML = converted
+  const dom = plainTextToDom(text)
+  if (!dom) return false
   const slice = PMDOMParser.fromSchema(view.state.schema).parseSlice(dom)
   view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView())
   return true

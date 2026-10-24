@@ -1,6 +1,7 @@
 // Builds mobile-editor/ into a single HTML page and writes it as a TypeScript string module
 // the React Native app imports (mobile/src/editor/editorHtml.ts).
 import { build } from 'vite'
+import { createHash } from 'node:crypto'
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -10,7 +11,15 @@ const editorDir = join(root, 'mobile-editor')
 const out = join(root, 'mobile', 'src', 'editor', 'editorHtml.ts')
 
 await build({ configFile: join(editorDir, 'vite.config.ts') })
-const html = await readFile(join(editorDir, 'dist', 'index.html'), 'utf8')
+const built = await readFile(join(editorDir, 'dist', 'index.html'), 'utf8')
+
+// Only the page's own script may run and nothing may load or send data, so a note's content cannot reach the network.
+// React Native's injectJavaScript is not subject to the page's CSP.
+const scripts = [...built.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1])
+if (!scripts.length || !built.includes('<meta charset="UTF-8" />')) throw new Error('unexpected editor page; CSP not added')
+const hashes = scripts.map((s) => `'sha256-${createHash('sha256').update(s).digest('base64')}'`)
+const csp = `default-src 'none'; script-src ${hashes.join(' ')}; style-src 'unsafe-inline'; img-src data:; font-src data:`
+const html = built.replace('<meta charset="UTF-8" />', `$&\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`)
 await mkdir(dirname(out), { recursive: true })
 await writeFile(
   out,

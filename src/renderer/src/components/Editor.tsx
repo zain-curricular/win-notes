@@ -42,7 +42,7 @@ import {
 } from '../editor/commands'
 import { onRemoteNote, useStore, type Note } from '../lib/store'
 import { fullDate } from '../lib/dates'
-import { hasBoxTable, normalizeHtml, plainTextToHtml } from '../lib/paste'
+import { hasBoxTable, normalizeHtml, plainTextToDom } from '../lib/paste'
 import { toMarkdown } from '../lib/markdown'
 import { CASE_COMMANDS, changeCase } from '../editor/changeCase'
 import { MenuList, openContextMenu, Popover, ToolButton, type MenuItem } from './ui'
@@ -75,10 +75,8 @@ function handlePaste(view: TiptapEditor['view'], event: ClipboardEvent): boolean
   if ($from.parent.type.name === 'codeBlock') return false
   const preferText = !html || (!/<table/i.test(html) && hasBoxTable(text))
   if (!preferText) return false
-  const converted = plainTextToHtml(text)
-  if (!converted) return false
-  const dom = document.createElement('div')
-  dom.innerHTML = converted
+  const dom = plainTextToDom(text)
+  if (!dom) return false
   const slice = PMDOMParser.fromSchema(view.state.schema).parseSlice(dom)
   view.dispatch(view.state.tr.replaceSelection(slice).scrollIntoView())
   return true
