@@ -16,6 +16,15 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
       - run: npm ci
+      # The tests import Android code, and its tsconfig extends Expo's.
+      - run: npm ci
+        working-directory: mobile
       - run: npm run typecheck
+      - run: npm run build:editor
+      - run: npx tsc --noEmit
+        working-directory: mobile
       - run: npm test
