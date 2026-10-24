@@ -6,6 +6,7 @@ import * as Clipboard from 'expo-clipboard'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { isEmptyNote, onRemoteNote, useStore, viewTitle, type Note } from '../lib/store'
 import { fullDate } from '../lib/dates'
+import { isOpenableLink } from '../lib/links'
 import { useTheme, type Theme } from '../theme'
 import { BarButton, TopBar } from '../components/TopBar'
 import { ActionSheet, type SheetItem } from '../components/ActionSheet'
@@ -213,7 +214,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
         setFocused(msg.focused)
         break
       case 'link':
-        Linking.openURL(msg.href).catch(() => {})
+        if (isOpenableLink(msg.href)) Linking.openURL(msg.href).catch(() => {})
         break
       case 'markdown':
         if (markdownReq.current?.id === msg.reqId) markdownReq.current.resolve({ text: msg.text, html: msg.html })
@@ -283,7 +284,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
         onMessage={onMessage}
         onShouldStartLoadWithRequest={(req) => {
           if (req.url.startsWith('about:') || req.url.startsWith('data:')) return true
-          Linking.openURL(req.url).catch(() => {})
+          if (isOpenableLink(req.url)) Linking.openURL(req.url).catch(() => {})
           return false
         }}
         style={{ flex: 1, backgroundColor: t.bg }}
