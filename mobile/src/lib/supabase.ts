@@ -12,7 +12,8 @@ const key = extra.supabaseKey
 export const supabase: SupabaseClient | null =
   url && key
     ? createClient(url, key, {
-        auth: { storage: AsyncStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+        // PKCE: a confirmation link only works on the device that signed up (see lib/authLink.ts).
+        auth: { storage: AsyncStorage, flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
         realtime: { params: { eventsPerSecond: 20 } }
       })
     : null

@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { AnimatePresence, motion } from 'motion/react'
+import { parseAuthLink, UNUSABLE_LINK } from './lib/authLink'
 import { supabase } from './lib/supabase'
 import { useStore } from './lib/store'
 import { flushNow, startSync, stopSync } from './lib/sync'
@@ -112,23 +113,17 @@ export default function App(): ReactNode {
   const [authNotice, setAuthNotice] = useState<string | null>(null)
   useZoom()
 
-  // Confirmation emails open winnotes://auth-callback#access_token=…&refresh_token=…
+  // Confirmation emails open winnotes://auth-callback?code=…
   useEffect(() => {
     if (!supabase || !window.deepLinks) return
     const client = supabase
     const handle = async (url: string | null): Promise<void> => {
-      if (!url) return
-      const params = new URLSearchParams(url.split('#')[1] ?? url.split('?')[1] ?? '')
-      const error = params.get('error_description')
-      if (error) {
-        setAuthNotice(error.replace(/\+/g, ' '))
-        return
-      }
-      const access_token = params.get('access_token')
-      const refresh_token = params.get('refresh_token')
-      if (!access_token || !refresh_token) return
-      const { error: sessionError } = await client.auth.setSession({ access_token, refresh_token })
-      if (sessionError) setAuthNotice(`${sessionError.message}. Sign in with your email and password.`)
+      const link = url ? parseAuthLink(url) : null
+      if (!link) return
+      if (link.kind === 'error') return setAuthNotice(link.message)
+      if (link.kind === 'refused') return setAuthNotice(UNUSABLE_LINK)
+      const { error } = await client.auth.exchangeCodeForSession(link.code, { flowId: link.flowId })
+      if (error) setAuthNotice(UNUSABLE_LINK)
     }
     window.deepLinks.take().then(handle)
     return window.deepLinks.on(handle)

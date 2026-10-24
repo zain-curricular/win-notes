@@ -17,7 +17,7 @@ if (process.env.NOTES_CDP_PORT) app.commandLine.appendSwitch('remote-debugging-p
 
 let mainWindow: BrowserWindow | null = null
 
-// Sign-up confirmation emails link back to winnotes://auth-callback#access_token=...
+// Sign-up confirmation emails link back to winnotes://auth-callback?code=...
 const PROTOCOL = 'winnotes'
 const findLink = (argv: string[]): string | undefined => argv.find((a) => a.startsWith(`${PROTOCOL}://`))
 let pendingLink: string | null = findLink(process.argv) ?? null

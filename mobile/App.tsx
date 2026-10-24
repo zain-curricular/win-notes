@@ -7,6 +7,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { Session } from '@supabase/supabase-js'
+import { parseAuthLink, UNUSABLE_LINK } from './src/lib/authLink'
 import { supabase } from './src/lib/supabase'
 import { saveNow, useStore } from './src/lib/store'
 import { flushNow, startSync, stopSync } from './src/lib/sync'
@@ -20,20 +21,14 @@ import type { RootStackParamList } from './src/navigation'
 const MODE_KEY = 'win-notes:mode'
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
-/** Confirmation emails open winnotes://auth-callback#access_token=…&refresh_token=… */
+/** Confirmation emails open winnotes://auth-callback?code=… */
 async function handleAuthLink(url: string | null, onNotice: (s: string) => void): Promise<void> {
-  if (!url || !supabase || !url.includes('auth-callback')) return
-  const params = new URLSearchParams(url.split('#')[1] ?? url.split('?')[1] ?? '')
-  const error = params.get('error_description')
-  if (error) {
-    onNotice(error.replace(/\+/g, ' '))
-    return
-  }
-  const access_token = params.get('access_token')
-  const refresh_token = params.get('refresh_token')
-  if (!access_token || !refresh_token) return
-  const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token })
-  if (sessionError) onNotice(`${sessionError.message}. Sign in with your email and password.`)
+  const link = url && supabase ? parseAuthLink(url) : null
+  if (!link || !supabase) return
+  if (link.kind === 'error') return onNotice(link.message)
+  if (link.kind === 'refused') return onNotice(UNUSABLE_LINK)
+  const { error } = await supabase.auth.exchangeCodeForSession(link.code, { flowId: link.flowId })
+  if (error) onNotice(UNUSABLE_LINK)
 }
 
 export default function App() {
