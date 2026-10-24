@@ -1290,7 +1290,8 @@ input {
 .shortcut-actions button:hover {
   background: var(--press);
 }
-.shortcut-fixed {
+.shortcut-fixed,
+.shortcut-unset {
   color: var(--text-3);
   font-size: 12px;
 }

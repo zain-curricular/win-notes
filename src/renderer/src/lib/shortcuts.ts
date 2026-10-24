@@ -72,7 +72,22 @@ export const SHORTCUTS = {
   alignRight: { title: 'Align Right', group: 'Alignment', scope: 'editor', keys: ['Mod-}', 'Mod-Shift-]'] },
   // VS Code's Copy Line Down/Up on both platforms; on a Mac this takes over Option-Shift-arrow paragraph selection.
   copyLineDown: { title: 'Copy Line Down', group: 'Lines', scope: 'editor', keys: ['Alt-Shift-ArrowDown'] },
-  copyLineUp: { title: 'Copy Line Up', group: 'Lines', scope: 'editor', keys: ['Alt-Shift-ArrowUp'] }
+  copyLineUp: { title: 'Copy Line Up', group: 'Lines', scope: 'editor', keys: ['Alt-Shift-ArrowUp'] },
+
+  // Unbound, as in VS Code; keys can be given to them in Keyboard Shortcuts.
+  caseUpper: { title: 'UPPERCASE', group: 'Change Case', scope: 'editor', keys: [] },
+  caseLower: { title: 'lowercase', group: 'Change Case', scope: 'editor', keys: [] },
+  caseTitle: { title: 'Title Case', group: 'Change Case', scope: 'editor', keys: [] },
+  caseSentence: { title: 'Sentence case', group: 'Change Case', scope: 'editor', keys: [] },
+  caseCamel: { title: 'camelCase', group: 'Change Case', scope: 'editor', keys: [] },
+  casePascal: { title: 'PascalCase', group: 'Change Case', scope: 'editor', keys: [] },
+  caseSnake: { title: 'snake_case', group: 'Change Case', scope: 'editor', keys: [] },
+  caseScreamingSnake: { title: 'SCREAMING_SNAKE_CASE', group: 'Change Case', scope: 'editor', keys: [] },
+  caseKebab: { title: 'kebab-case', group: 'Change Case', scope: 'editor', keys: [] },
+  caseScreamingKebab: { title: 'SCREAMING-KEBAB-CASE', group: 'Change Case', scope: 'editor', keys: [] },
+  caseDot: { title: 'dot.case', group: 'Change Case', scope: 'editor', keys: [] },
+  casePath: { title: 'path/case', group: 'Change Case', scope: 'editor', keys: [] },
+  caseToggle: { title: 'Toggle Case', group: 'Change Case', scope: 'editor', keys: [] }
 } as const satisfies Record<string, Shortcut>
 
 export type ShortcutId = keyof typeof SHORTCUTS
@@ -170,7 +185,7 @@ export const keyLabel = (keys: string, platform: Platform): string => label(pars
 export function shortcutsFor(platform: Platform, overrides: () => Overrides = () => ({})) {
   const keys = (id: ShortcutId): readonly string[] => keysFor(id, platform, overrides())
   return {
-    label: (id: ShortcutId): string => keyLabel(keys(id)[0], platform),
+    label: (id: ShortcutId): string => (keys(id).length ? keyLabel(keys(id)[0], platform) : ''),
     /** For shortcuts read straight from key events; editor ones go through `keymap`. */
     matches: (e: KeyEventLike, id: Exclude<ShortcutId, EditorShortcutId>): boolean =>
       keys(id).some((k) => matches(e, parseKeys(k, platform), platform)),

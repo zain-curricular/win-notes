@@ -152,8 +152,10 @@ export function ShortcutSettings(): ReactNode {
                         <span className="shortcut-keys">
                           {isRecording ? (
                             <span className="shortcut-prompt">Press the new keys… (Esc to cancel)</span>
-                          ) : (
+                          ) : keysFor(id, platform, overrides).length ? (
                             distinctLabels(keysFor(id, platform, overrides)).map((l) => <kbd key={l}>{l}</kbd>)
+                          ) : (
+                            <span className="shortcut-unset">Not set</span>
                           )}
                         </span>
                         <span className="shortcut-actions">

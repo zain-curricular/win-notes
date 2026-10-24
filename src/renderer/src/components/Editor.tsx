@@ -44,8 +44,9 @@ import { onRemoteNote, useStore, type Note } from '../lib/store'
 import { fullDate } from '../lib/dates'
 import { hasBoxTable, normalizeHtml, plainTextToHtml } from '../lib/paste'
 import { toMarkdown } from '../lib/markdown'
-import { MenuList, Popover, ToolButton, type MenuItem } from './ui'
-import { shortcuts, type EditorShortcutId } from '../lib/shortcuts'
+import { CASE_COMMANDS, changeCase } from '../editor/changeCase'
+import { MenuList, openContextMenu, Popover, ToolButton, type MenuItem } from './ui'
+import { shortcuts, SHORTCUTS, type EditorShortcutId } from '../lib/shortcuts'
 import { noteMenu } from './NoteList'
 
 function deriveMeta(editor: TiptapEditor): Pick<Note, 'title' | 'snippet' | 'body'> {
@@ -437,6 +438,22 @@ function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor
           e.preventDefault()
           editor.commands.focus('end')
         }
+      }}
+      onContextMenu={(e) => {
+        if (!editor || deleted || !(e.target as HTMLElement).closest('.ProseMirror')) return
+        openContextMenu(e, [
+          {
+            label: 'Change Case',
+            submenu: CASE_COMMANDS.map(({ id, format }) => ({
+              label: SHORTCUTS[id].title,
+              shortcut: shortcuts.label(id),
+              onSelect: () => {
+                const tr = changeCase(editor.state, format)
+                if (tr) editor.view.dispatch(tr)
+              }
+            }))
+          }
+        ])
       }}
     >
       {deleted ? <div className="deleted-banner">This note is in Recently Deleted. Recover it to edit.</div> : null}

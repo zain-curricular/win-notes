@@ -8,6 +8,7 @@ import { TableKit } from '@tiptap/extension-table'
 import Highlight from '@tiptap/extension-highlight'
 import { Placeholder } from '@tiptap/extensions'
 import TextAlign from '@tiptap/extension-text-align'
+import { CASE_COMMANDS, changeCase, type CaseShortcutId } from './changeCase'
 import { insertTable, setAlign, setStyle, toggleChecked, toggleList } from './commands'
 import { foldedRanges } from './folds'
 import { copyLines, LineClipboard } from './lineCopy'
@@ -127,7 +128,11 @@ const NotesShortcuts = Extension.create({
       alignCenter: () => setAlign(e, 'center'),
       alignRight: () => setAlign(e, 'right'),
       copyLineDown: () => apply(copyLines(e.state, 'down')),
-      copyLineUp: () => apply(copyLines(e.state, 'up'))
+      copyLineUp: () => apply(copyLines(e.state, 'up')),
+      ...(Object.fromEntries(CASE_COMMANDS.map(({ id, format }) => [id, () => apply(changeCase(e.state, format))])) as Record<
+        CaseShortcutId,
+        () => boolean
+      >)
     }
     // Rebuilt only when a shortcut changes, since TipTap's own keyboard shortcuts are fixed once the editor exists.
     let built = -1

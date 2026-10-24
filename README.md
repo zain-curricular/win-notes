@@ -9,6 +9,7 @@ A macOS Notes–style app for Windows, Mac and Android, with folders and instant
 - Works offline: changes are saved locally and upload when you reconnect
 - Selecting text highlights its other copies in the note, and ⌘D adds the next copy to the selection, as in VS Code
 - VS Code line editing: copy a line down or up, and ⌘C / ⌘X with nothing selected copy or cut the whole line
+- Change Case from the right-click menu: UPPERCASE, lowercase, Title Case, Sentence case, camelCase, PascalCase, snake_case, SCREAMING_SNAKE_CASE, kebab-case, SCREAMING-KEBAB-CASE, dot.case, path/case and Toggle Case, each of which can be given a key in Keyboard Shortcuts
 - Every shortcut can be changed in Keyboard Shortcuts (⌘,), saved on each computer
 - Pinning, Recently Deleted (30 days), drag notes onto folders, search with Match Case / Whole Word / Regular Expression, copy/export as Markdown
 - Windows 11 Mica / macOS vibrancy sidebar, light and dark mode
