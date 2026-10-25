@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, Sc
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { useTheme } from '../theme'
+import { meetsSignUpRule, SIGN_UP_PASSWORD_RULE } from '../lib/passwordRule'
 
 export const AUTH_REDIRECT = 'winnotes://auth-callback'
 
@@ -18,6 +19,7 @@ export function AuthScreen({ notice, onOffline }: { notice: string | null; onOff
 
   const submit = async (): Promise<void> => {
     if (!supabase || busy) return
+    if (mode === 'signup' && !meetsSignUpRule(password)) return setError(SIGN_UP_PASSWORD_RULE)
     setBusy(true)
     setError(null)
     setInfo(null)
@@ -79,6 +81,7 @@ export function AuthScreen({ notice, onOffline }: { notice: string | null; onOff
               onSubmitEditing={submit}
               returnKeyType="go"
             />
+            {mode === 'signup' && error !== SIGN_UP_PASSWORD_RULE ? <Text style={[styles.msg, { color: t.text3 }]}>{SIGN_UP_PASSWORD_RULE}</Text> : null}
             {error ? <Text style={[styles.msg, { color: t.danger }]}>{error}</Text> : null}
             {info ? <Text style={[styles.msg, { color: t.text2 }]}>{info}</Text> : null}
             <Pressable onPress={submit} disabled={busy || !email || password.length < 6} style={({ pressed }) => [styles.primary, { backgroundColor: t.accent, opacity: pressed ? 0.85 : busy || !email || password.length < 6 ? 0.5 : 1 }]}>

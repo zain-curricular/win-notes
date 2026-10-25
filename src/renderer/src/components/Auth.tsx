@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AppIcon } from './AppIcon'
+import { meetsSignUpRule, SIGN_UP_PASSWORD_RULE } from '../lib/passwordRule'
 
 export const AUTH_REDIRECT = 'winnotes://auth-callback'
 
@@ -17,6 +18,7 @@ export function AuthScreen({ onOffline, notice }: { onOffline: () => void; notic
   const submit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
     if (!supabase) return
+    if (mode === 'signup' && !meetsSignUpRule(password)) return setError(SIGN_UP_PASSWORD_RULE)
     setBusy(true)
     setError(null)
     setInfo(null)
@@ -44,6 +46,8 @@ export function AuthScreen({ onOffline, notice }: { onOffline: () => void; notic
     }
   }
 
+  const showRule = mode === 'signup' && error !== SIGN_UP_PASSWORD_RULE
+
   return (
     <div className="auth">
       <div className="auth-drag" />
@@ -65,12 +69,17 @@ export function AuthScreen({ onOffline, notice }: { onOffline: () => void; notic
             <input
               type="password"
               placeholder="Password"
+              aria-describedby={showRule ? 'password-rule' : undefined}
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {showRule ? (
+              <p id="password-rule" className="auth-hint">
+                {SIGN_UP_PASSWORD_RULE}
+              </p>
+            ) : null}
             <AnimatePresence mode="popLayout">
               {error ? (
                 <motion.div key="err" className="auth-error" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
