@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { applyZoom, savedZoom } from './lib/zoom'
 import { loadKeybindings } from './lib/keybindings'
 import { platform } from './lib/shortcuts'
@@ -13,6 +14,8 @@ loadKeybindings(platform)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 )
