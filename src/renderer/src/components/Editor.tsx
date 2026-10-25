@@ -339,6 +339,9 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
 // Each focus request is used once. Otherwise every note opened afterwards (a search narrowing the list, an arrow
 // key in the list) would pull the cursor out of whatever the person is typing in.
 let handledFocusTick = 0
+// Keys typed between a focus request (New Note, Enter in the list) and the new editor taking focus would be lost or
+// land in the previous note; they are kept here and typed into the new note once it has focus.
+let earlyKeys = ''
 
 function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor | null) => void }): ReactNode {
   const noteId = note.id
@@ -409,19 +412,32 @@ function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor
   const focusTick = useStore((s) => s.focusEditorTick)
   useEffect(() => {
     if (!editor || focusTick === handledFocusTick) return
+    // The previous note's editor stays mounted while it fades out; it lets go of focus so keys meant for the new note
+    // are kept for it instead of edited into a note that is leaving the screen.
+    if (useStore.getState().selectedNoteId !== noteId) {
+      if (editor.view.hasFocus()) editor.view.dom.blur()
+      return
+    }
     if (deleted) {
       handledFocusTick = focusTick
+      earlyKeys = ''
       return
     }
     // Focus directly: TipTap's focus command waits for a repaint, which Windows pauses for covered windows.
     const t = setTimeout(() => {
       if (editor.isDestroyed) return
       handledFocusTick = focusTick
-      editor.view.dispatch(editor.state.tr.setSelection(Selection.atEnd(editor.state.doc)).scrollIntoView())
+      editor.view.dispatch(editor.state.tr.setSelection(Selection.atEnd(editor.state.doc)))
       editor.view.focus()
+      earlyKeys.split('\n').forEach((text, i) => {
+        if (i) editor.commands.enter()
+        if (text) editor.view.dispatch(editor.state.tr.insertText(text))
+      })
+      earlyKeys = ''
+      editor.view.dispatch(editor.state.tr.scrollIntoView())
     }, 0)
     return () => clearTimeout(t)
-  }, [focusTick, editor, deleted])
+  }, [focusTick, editor, deleted, noteId])
 
   return (
     <motion.div
@@ -466,6 +482,24 @@ export function EditorPane({ onBack }: { onBack?: () => void }): ReactNode {
   const [editor, setEditor] = useState<TiptapEditor | null>(null)
   const onEditor = useCallback((e: TiptapEditor | null) => setEditor(e), [])
   const noteKey = note ? `${note.id}:${note.deleted_at ? 'd' : 'a'}` : 'none'
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const target = e.target as HTMLElement
+      const s = useStore.getState()
+      if (!s.selectedNoteId || s.focusEditorTick === handledFocusTick || target.closest('input, textarea, select, [contenteditable="true"]')) return
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
+      if (e.key === 'Backspace') earlyKeys = earlyKeys.slice(0, -1)
+      else if (e.key === 'Enter') earlyKeys += '\n'
+      else if (e.key.length === 1) earlyKeys += e.key
+      else return
+      // Captured before the note list, where Backspace would delete the note these keys are meant for.
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
 
   return (
     <div className="editor-pane">
