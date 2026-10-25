@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // One-time cloud setup: creates (or reuses) a Supabase project, applies the database schema,
-// disables email confirmation, writes .env.production, and optionally builds the installer.
+// pushes the auth settings in supabase/config.toml, writes .env.production, and optionally builds the installer.
 //
 //   npm run setup:cloud                         create a new project named "win-notes"
 //   npm run setup:cloud -- --project-ref <ref>  use an existing project
@@ -12,6 +12,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const root = join(import.meta.dirname, '..')
 const args = process.argv.slice(2)
@@ -23,11 +24,16 @@ const has = (name) => args.includes(`--${name}`)
 const secretsFile = join(root, '.env.supabase.local')
 
 const isWin = process.platform === 'win32'
+const SECRET_FLAGS = new Set(['--password', '--db-password'])
+
+/** The command as it can be printed: the database password is never shown. */
+export const shownCommand = (cmdArgs) => cmdArgs.map((a, i) => (SECRET_FLAGS.has(cmdArgs[i - 1]) ? '***' : a)).join(' ')
+
 function sb(cmdArgs, { json = false, quiet = false } = {}) {
   const res = spawnSync('supabase', cmdArgs, { cwd: root, encoding: 'utf8', shell: isWin })
   if (res.status !== 0) {
     const msg = (res.stderr || res.stdout || '').trim()
-    throw new Error(`supabase ${cmdArgs.join(' ')} failed:\n${msg}`)
+    throw new Error(`supabase ${shownCommand(cmdArgs)} failed:\n${msg}`)
   }
   if (!quiet && !json && res.stdout.trim()) console.log(res.stdout.trim())
   if (!json) return res.stdout
@@ -100,20 +106,16 @@ async function main() {
   sb(['link', '--project-ref', ref, '--password', password])
   sb(['db', 'push', '--linked', '--password', password, '--yes'])
 
-  step(5, 'Pushing auth settings (email confirmation off, so sign-up works instantly)')
+  step(5, 'Pushing auth settings (email confirmation, password rules, winnotes:// sign-in links)')
+  const authSettings =
+    `Check "Confirm email" is on at https://supabase.com/dashboard/project/${ref}/auth/providers and that ` +
+    `winnotes://auth-callback** is a redirect URL at https://supabase.com/dashboard/project/${ref}/auth/url-configuration`
   if (!ownsProject) {
-    console.log(
-      `Skipped for an existing project. If sign-up asks you to confirm by email, turn off "Confirm email" at
-` +
-        `https://supabase.com/dashboard/project/${ref}/auth/providers`
-    )
+    console.log(`Skipped for an existing project. ${authSettings}`)
   } else try {
     sb(['config', 'push', '--project-ref', ref, '--yes'])
   } catch (err) {
-    console.warn(
-      `Could not push auth settings automatically:\n${err.message}\n` +
-        `Turn off "Confirm email" manually: https://supabase.com/dashboard/project/${ref}/auth/providers`
-    )
+    console.warn(`Could not push auth settings automatically:\n${err.message}\n${authSettings}`)
   }
 
   step(6, 'Writing .env.production')
@@ -137,7 +139,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(`\nSetup failed: ${err.message}`)
-  process.exit(1)
-})
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error(`\nSetup failed: ${err.message}`)
+    process.exit(1)
+  })
+}
