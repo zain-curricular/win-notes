@@ -1,18 +1,22 @@
 # Typecheck and tests on every pushed branch; a pull request shows the run for its head commit.
-# Installers are built by build.yml. The tests set the platform themselves, so one Linux runner covers the
-# Windows and Mac shortcut rules.
+# build.yml runs this before building installers. The tests set the platform themselves, so one Linux runner covers
+# the Windows and Mac shortcut rules. Actions are pinned to commits; Dependabot keeps them current.
 name: Checks
 
 on:
   push:
     branches: ['**']
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24
           cache: npm
@@ -28,3 +32,5 @@ jobs:
       - run: npx tsc --noEmit
         working-directory: mobile
       - run: npm test
+      # Only what ships inside the desktop app; build tools are kept current through Dependabot.
+      - run: npm audit --omit=dev --audit-level=high
