@@ -34,3 +34,22 @@ jobs:
       - run: npm test
       # Only what ships inside the desktop app; build tools are kept current through Dependabot.
       - run: npm audit --omit=dev --audit-level=high
+
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:e2e
+      - if: runner.os != 'Linux'
+        run: npm run test:e2e
