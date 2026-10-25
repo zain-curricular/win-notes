@@ -19,11 +19,15 @@ function inline(nodes: JSONContent[] = []): string {
     .join('')
 }
 
+// The backslash is escaped too: in `a\|b` it would otherwise cancel the pipe's escape and split the cell.
+export const escapeTableCell = (text: string): string => text.replace(/[\\|]/g, '\\$&')
+
 function cellText(cell: JSONContent): string {
-  return (cell.content ?? [])
-    .map((p) => inline(p.content))
-    .join(' ')
-    .replace(/\|/g, '\\|')
+  return escapeTableCell(
+    (cell.content ?? [])
+      .map((p) => inline(p.content))
+      .join(' ')
+  )
 }
 
 function listItems(node: JSONContent, indent: string, marker: (i: number, item: JSONContent) => string): string {

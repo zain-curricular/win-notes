@@ -1,4 +1,5 @@
 import { marked } from 'marked'
+import { escapeTableCell } from './markdown'
 
 // Box-drawing tables, as printed by Claude Code and other terminal apps.
 const BORDER = /^[┌├└╭╰┏┣┗╔╠╚┡┢╞╟+][─━═┬┼┴┳╋┻╤╪╧╦╬╩+\-:\s┐┤┘╮╯┓┫┛╗╣╝┩┪╡╢]*$/
@@ -18,8 +19,6 @@ function splitCells(line: string): string[] {
     .split(CELL_SPLIT)
     .map((c) => c.trim())
 }
-
-const escapeCell = (c: string): string => c.replace(/\|/g, '\\|')
 
 function boxBlockToMarkdown(block: string[]): string | null {
   // Group text lines into rows, splitting at interior border lines.
@@ -73,7 +72,7 @@ function boxBlockToMarkdown(block: string[]): string | null {
   }
 
   const [header, ...body] = rows
-  const fmt = (r: string[]): string => `| ${r.map(escapeCell).join(' | ')} |`
+  const fmt = (r: string[]): string => `| ${r.map(escapeTableCell).join(' | ')} |`
   return [fmt(header), `| ${header.map(() => '---').join(' | ')} |`, ...body.map(fmt)].join('\n')
 }
 
