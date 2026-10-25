@@ -108,16 +108,17 @@ const ALIGN_BUTTONS: { align: Alignment; label: string; icon: ReactNode; shortcu
 function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => void }): ReactNode {
   const st = useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
-      style: currentStyle(e),
-      list: currentList(e),
-      quote: e.isActive('blockquote'),
-      bold: e.isActive('bold'),
-      italic: e.isActive('italic'),
-      underline: e.isActive('underline'),
-      strike: e.isActive('strike'),
-      highlight: currentHighlight(e),
-      align: currentAlign(e)
+    // Reads the editor passed in: when it changes, useEditorState keeps the old editor's snapshot until the next transaction.
+    selector: () => ({
+      style: currentStyle(editor),
+      list: currentList(editor),
+      quote: editor.isActive('blockquote'),
+      bold: editor.isActive('bold'),
+      italic: editor.isActive('italic'),
+      underline: editor.isActive('underline'),
+      strike: editor.isActive('strike'),
+      highlight: currentHighlight(editor),
+      align: currentAlign(editor)
     })
   })
   return (
@@ -222,7 +223,8 @@ function EditorToolbar({ editor, note, onBack }: { editor: TiptapEditor | null; 
 
   const st = useEditorState({
     editor,
-    selector: ({ editor: e }) => (e ? { task: e.isActive('taskList'), table: e.isActive('table') } : { task: false, table: false })
+    // As in FormatMenu: read the editor passed in, not the snapshot's.
+    selector: () => (editor && !editor.isDestroyed ? { task: editor.isActive('taskList'), table: editor.isActive('table') } : { task: false, table: false })
   })
 
 
