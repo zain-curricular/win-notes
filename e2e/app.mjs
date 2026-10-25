@@ -46,11 +46,14 @@ export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}`
   })
   app.profile = profile
   app.quit = async () => {
+    if (child.exitCode !== null) return app.close()
+    const exited = new Promise((r) => child.once('exit', r))
+    // Closing the window lets the page save and Chromium write storage to disk; a killed process skips both on Windows.
+    app.send('Runtime.evaluate', { expression: 'window.close()' })
+    const closed = process.platform !== 'darwin' && (await Promise.race([exited.then(() => true), sleep(10000).then(() => false)]))
     app.close()
-    if (child.exitCode === null) {
-      child.kill()
-      await new Promise((r) => child.once('exit', r))
-    }
+    if (!closed) child.kill()
+    await exited
   }
   app.removeProfile = () => rmSync(join(userData(), `profile-${profile}`), { recursive: true, force: true })
   return app
