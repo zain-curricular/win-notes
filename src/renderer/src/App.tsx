@@ -12,6 +12,7 @@ import { AuthScreen } from './components/Auth'
 import { ContextMenuLayer } from './components/ui'
 import { onShortcutsChange, shortcuts, shortcutsVersion, type AppShortcutId } from './lib/shortcuts'
 import { OPEN_SHORTCUTS, ShortcutSettings } from './components/ShortcutSettings'
+import { VaultSheet } from './components/VaultSheet'
 import { applyZoom, savedZoom, stepZoom } from './lib/zoom'
 
 const MODE_KEY = 'win-notes:mode'
@@ -103,6 +104,7 @@ function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () =
       </div>
       <ContextMenuLayer />
       <ShortcutSettings />
+      <VaultSheet />
     </div>
   )
 }
@@ -152,6 +154,7 @@ export default function App(): ReactNode {
   const signOut = async (): Promise<void> => {
     await flushNow().catch(() => {})
     stopSync()
+    await window.vault?.lock()
     useStore.getState().reset({ forget: true })
     await supabase?.auth.signOut()
   }

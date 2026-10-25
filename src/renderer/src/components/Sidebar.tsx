@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Cloud, CloudOff, Download, Folder, FolderPlus, HardDrive, Keyboard, LogOut, PanelLeft, RefreshCw, Trash2, UserRound, X } from 'lucide-react'
+import { Cloud, CloudOff, Download, Folder, FolderPlus, HardDrive, Keyboard, KeyRound, LogOut, PanelLeft, RefreshCw, Trash2, UserRound, X } from 'lucide-react'
 import { useStore, type View } from '../lib/store'
 import { openContextMenu, Popover, ToolButton } from './ui'
 import { shortcuts } from '../lib/shortcuts'
 import { OPEN_SHORTCUTS } from './ShortcutSettings'
+import { OPEN_VAULT } from './VaultSheet'
 
 const NOTE_MIME = 'application/x-note-id'
 
@@ -149,6 +150,9 @@ function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignO
             <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_SHORTCUTS)))}>
               <Keyboard size={14} /> Keyboard Shortcuts…
             </button>
+            <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_VAULT)))}>
+              <KeyRound size={14} /> Secure Vault…
+            </button>
             <button className="pop-action danger" onClick={() => (setOpen(false), onSignOut())}>
               <LogOut size={14} /> Sign Out
             </button>
@@ -159,6 +163,9 @@ function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignO
             <div className="account-hint">Your notes are saved only on this computer.</div>
             <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_SHORTCUTS)))}>
               <Keyboard size={14} /> Keyboard Shortcuts…
+            </button>
+            <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_VAULT)))}>
+              <KeyRound size={14} /> Secure Vault…
             </button>
             <button className="pop-action" onClick={() => (setOpen(false), onSignIn())}>
               <Cloud size={14} /> Sign In to Sync…
