@@ -44,6 +44,28 @@ describe('signing out', () => {
   })
 })
 
+describe('deleting a folder', () => {
+  beforeEach(() => {
+    saved.clear()
+    useStore.getState().reset()
+    useStore.getState().load('local')
+  })
+
+  it('sends its notes to Recently Deleted but drops empty ones, as deleting an empty note does', () => {
+    const store = useStore.getState()
+    const folderId = store.createFolder('Trip')
+    const kept = store.createNote()
+    store.updateNote(kept, { title: 'Packing', body: 'Packing' })
+    store.selectNote(null)
+    const empty = useStore.getState().createNote()
+    useStore.getState().deleteFolder(folderId)
+    const { notes, pendingDeletes } = useStore.getState()
+    expect(notes[kept].deleted_at).not.toBeNull()
+    expect(notes[empty]).toBeUndefined()
+    expect(pendingDeletes).toContainEqual({ table: 'notes', id: empty })
+  })
+})
+
 describe('the sidebar in a narrow window', () => {
   beforeEach(() => {
     saved.clear()
@@ -65,7 +87,6 @@ describe('the sidebar in a narrow window', () => {
     expect(sidebarVisible(useStore.getState())).toBe(true)
   })
 })
-
 
 describe('text the open editor has not saved yet', () => {
   beforeEach(() => {

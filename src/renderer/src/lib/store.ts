@@ -513,9 +513,16 @@ export const useStore = create<State>()((set, get) => {
       const ts = nowIso()
       const notes = { ...s.notes }
       const dirtyNotes = { ...s.dirtyNotes }
+      const pendingDeletes = [...s.pendingDeletes]
       // Like macOS: the folder's notes go to Recently Deleted.
       for (const n of Object.values(notes)) {
         if (n.folder_id !== id) continue
+        if (isEmptyNote(n) && !n.deleted_at) {
+          delete notes[n.id]
+          delete dirtyNotes[n.id]
+          pendingDeletes.push({ table: 'notes', id: n.id })
+          continue
+        }
         notes[n.id] = { ...n, folder_id: null, deleted_at: n.deleted_at ?? ts, pinned: false, updated_at: ts }
         dirtyNotes[n.id] = true
       }
@@ -523,7 +530,9 @@ export const useStore = create<State>()((set, get) => {
       delete folders[id]
       const dirtyFolders = { ...s.dirtyFolders }
       delete dirtyFolders[id]
-      set({ folders, notes, dirtyNotes, dirtyFolders, pendingDeletes: [...s.pendingDeletes, { table: 'folders', id }] })
+      pendingDeletes.push({ table: 'folders', id })
+      const selectedNoteId = s.selectedNoteId && notes[s.selectedNoteId] ? s.selectedNoteId : null
+      set({ folders, notes, dirtyNotes, dirtyFolders, pendingDeletes, selectedNoteId })
       if (s.view === id) get().setView('notes')
       changed()
     },
