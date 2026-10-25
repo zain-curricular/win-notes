@@ -40,7 +40,7 @@ import {
   type BlockStyle,
   type ListKind
 } from '../editor/commands'
-import { onRemoteNote, useStore, type Note } from '../lib/store'
+import { onRemoteNote, setEditorFlush, useStore, type Note } from '../lib/store'
 import { fullDate } from '../lib/dates'
 import { hasBoxTable, normalizeHtml, plainTextToDom } from '../lib/paste'
 import { toMarkdown } from '../lib/markdown'
@@ -375,6 +375,8 @@ function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor
     },
     [noteId, deleted]
   )
+
+  useEffect(() => setEditorFlush(() => pending.current && flush()), [flush])
 
   useEffect(() => {
     editorRef.current = editor

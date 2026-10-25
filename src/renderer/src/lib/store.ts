@@ -163,6 +163,16 @@ window.addEventListener('beforeunload', saveNow)
 
 // ---- helpers ----
 
+// The open editor saves on a short delay; anything that judges, copies or deletes a note must see its latest text.
+let flushEditor = (): void => {}
+
+export function setEditorFlush(flush: () => void): () => void {
+  flushEditor = flush
+  return () => {
+    if (flushEditor === flush) flushEditor = () => {}
+  }
+}
+
 export const sidebarVisible = (s: Pick<State, 'narrow' | 'sidebarOverlay' | 'sidebarOpen'>): boolean =>
   s.narrow ? s.sidebarOverlay : s.sidebarOpen
 
@@ -306,6 +316,7 @@ export const useStore = create<State>()((set, get) => {
     },
 
     setView: (view) => {
+      flushEditor()
       const s = get()
       if (s.selectedNoteId) {
         const prev = s.notes[s.selectedNoteId]
@@ -344,6 +355,7 @@ export const useStore = create<State>()((set, get) => {
     requestEditorFocus: () => set({ focusEditorTick: get().focusEditorTick + 1 }),
 
     createNote: () => {
+      flushEditor()
       const s = get()
       // Reuse an untouched blank note instead of stacking empties, like macOS.
       const current = s.selectedNoteId ? s.notes[s.selectedNoteId] : null
@@ -382,6 +394,7 @@ export const useStore = create<State>()((set, get) => {
     },
 
     selectNote: (id) => {
+      flushEditor()
       const s = get()
       if (s.selectedNoteId === id) return
       if (s.selectedNoteId) {
@@ -403,6 +416,7 @@ export const useStore = create<State>()((set, get) => {
     },
 
     deleteNote: (id) => {
+      flushEditor()
       const note = get().notes[id]
       if (!note) return
       const next = neighbourOf(id)
@@ -457,6 +471,7 @@ export const useStore = create<State>()((set, get) => {
     },
 
     duplicateNote: (id) => {
+      flushEditor()
       const note = get().notes[id]
       if (!note) return
       const ts = nowIso()

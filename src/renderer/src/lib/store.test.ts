@@ -7,7 +7,7 @@ vi.stubGlobal('localStorage', {
   removeItem: (k: string) => void saved.delete(k)
 })
 vi.stubGlobal('window', { addEventListener: () => {} })
-const { useStore, sidebarVisible } = await import('./store')
+const { useStore, sidebarVisible, setEditorFlush } = await import('./store')
 
 const signedIn = async (userId: string, { unsynced }: { unsynced: boolean }): Promise<void> => {
   const store = useStore.getState()
@@ -66,3 +66,24 @@ describe('the sidebar in a narrow window', () => {
   })
 })
 
+
+describe('text the open editor has not saved yet', () => {
+  beforeEach(() => {
+    saved.clear()
+    useStore.getState().reset()
+    useStore.getState().load('local')
+  })
+
+  it('counts before New Note decides whether the current note is empty', () => {
+    const typed = useStore.getState().createNote()
+    let pending: string | null = 'Alpha'
+    const unregister = setEditorFlush(() => {
+      if (pending) useStore.getState().updateNote(typed, { title: pending, body: pending })
+      pending = null
+    })
+    const next = useStore.getState().createNote()
+    unregister()
+    expect(next).not.toBe(typed)
+    expect(useStore.getState().notes[typed].title).toBe('Alpha')
+  })
+})
