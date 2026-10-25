@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, nativeTheme, net, shell } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, nativeTheme, net, session, shell } from 'electron'
 import { release } from 'os'
 import { join, resolve } from 'path'
 import { isNewer } from './version'
@@ -187,6 +187,12 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     if (isWin) app.setAppUserModelId('com.winnotes.app')
+    // Electron grants every permission by default. Notes needs none of camera, microphone, location or notifications.
+    // Copy as Markdown writes rich text with navigator.clipboard.write, which Electron 44 checks as clipboard-read.
+    const CLIPBOARD = new Set(['clipboard-read', 'clipboard-sanitized-write'])
+    const allowed = (permission: string): boolean => CLIPBOARD.has(permission)
+    session.defaultSession.setPermissionRequestHandler((_contents, permission, callback) => callback(allowed(permission)))
+    session.defaultSession.setPermissionCheckHandler((_contents, permission) => allowed(permission))
     buildMenu()
     createWindow()
     nativeTheme.on('updated', () => {
