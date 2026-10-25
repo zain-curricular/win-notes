@@ -88,6 +88,8 @@ export default function App() {
 
   const signOut = async (): Promise<void> => {
     await flushNow().catch(() => {})
+    stopSync()
+    useStore.getState().reset({ forget: true })
     await supabase?.auth.signOut()
   }
   const signIn = (): void => {

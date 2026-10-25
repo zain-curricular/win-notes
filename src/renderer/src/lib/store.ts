@@ -51,7 +51,7 @@ type State = Persisted & {
   focusEditorTick: number
 
   load: (userId: string) => void
-  reset: () => void
+  reset: (options?: { forget?: boolean }) => void
   setView: (view: View) => void
   setSearch: (q: string) => void
   setSearchOptions: (patch: Partial<SearchOptions>) => void
@@ -285,8 +285,14 @@ export const useStore = create<State>()((set, get) => {
       changed()
     },
 
-    reset: () => {
-      saveNow()
+    // forget: on sign-out the account's notes leave this computer, unless a change has not reached the server yet;
+    // then they stay, and upload the next time that account signs in here.
+    reset: ({ forget = false } = {}) => {
+      const { userId } = get()
+      if (forget && userId && userId !== 'local' && !hasPendingChanges()) {
+        clearTimeout(saveTimer)
+        localStorage.removeItem(storageKey(userId))
+      } else saveNow()
       set({ ...defaults, userId: null, search: '', syncStatus: 'local' })
     },
 

@@ -56,7 +56,7 @@ type State = Persisted & {
   syncStatus: SyncStatus
 
   load: (userId: string) => Promise<void>
-  reset: () => void
+  reset: (options?: { forget?: boolean }) => void
   setView: (view: View) => void
   setSearch: (q: string) => void
   setSyncStatus: (s: SyncStatus) => void
@@ -275,8 +275,14 @@ export const useStore = create<State>()((set, get) => {
       changed()
     },
 
-    reset: () => {
-      saveNow()
+    // forget: on sign-out the account's notes leave this phone, unless a change has not reached the server yet;
+    // then they stay, and upload the next time that account signs in here.
+    reset: ({ forget = false } = {}) => {
+      const { userId } = get()
+      if (forget && userId && userId !== 'local' && !hasPendingChanges()) {
+        clearTimeout(saveTimer)
+        AsyncStorage.removeItem(storageKey(userId)).catch(() => {})
+      } else saveNow()
       set({ ...defaults, userId: null, loaded: false, search: '', syncStatus: 'local' })
     },
 
