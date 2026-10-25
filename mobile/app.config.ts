@@ -32,7 +32,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
     android: {
-      package: 'com.winnotes.app',
+      // Not com.winnotes.app: that app was signed with Expo's public debug key, and a new name lets it be installed
+      // beside the old one, so notes can be checked before the old app is removed.
+      package: 'com.winnotes.notes',
       versionCode: 3,
       adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#f7e7a8' },
       predictiveBackGestureEnabled: false,
@@ -46,7 +48,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         }
       ]
     },
-    plugins: [['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#f7e7a8', dark: { backgroundColor: '#1c1c1e' } }]],
+    plugins: [
+      ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#f7e7a8', dark: { backgroundColor: '#1c1c1e' } }],
+      './plugins/releaseSigning'
+    ],
     ios: { bundleIdentifier: 'com.winnotes.app', supportsTablet: true },
     extra: {
       supabaseUrl: env.VITE_SUPABASE_URL ?? '',
