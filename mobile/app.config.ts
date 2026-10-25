@@ -50,8 +50,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#f7e7a8', dark: { backgroundColor: '#1c1c1e' } }],
-      // Leaves the session out of Android backups: a restored phone has no Keystore key to read it with.
-      'expo-secure-store',
+      // Backup rules come from ./plugins/backupRules: the plugin's own rules would leave the notes out too.
+      ['expo-secure-store', { configureAndroidBackup: false }],
+      './plugins/backupRules',
       './plugins/releaseSigning'
     ],
     ios: { bundleIdentifier: 'com.winnotes.app', supportsTablet: true },
