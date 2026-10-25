@@ -5,6 +5,8 @@ import { isNewer } from './version'
 
 const isMac = process.platform === 'darwin'
 const isWin = process.platform === 'win32'
+// The title bar is hidden everywhere, so Windows and Linux need Electron to draw the window buttons over the toolbar.
+const hasOverlay = isWin || process.platform === 'linux'
 // Windows 11 is build 22000+; Mica is only available there.
 const hasMica = isWin && Number(release().split('.')[2] ?? 0) >= 22000
 const TOOLBAR_HEIGHT = 52
@@ -66,7 +68,7 @@ function createWindow(): void {
     title: 'Notes',
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     ...(isMac ? { trafficLightPosition: trafficLightPosition(), vibrancy: 'sidebar', visualEffectState: 'followWindow' } : {}),
-    ...(isWin ? { titleBarOverlay: overlayColors() } : {}),
+    ...(hasOverlay ? { titleBarOverlay: overlayColors() } : {}),
     ...(hasMica ? { backgroundMaterial: 'mica' } : {}),
     backgroundColor: isMac || hasMica ? '#00000000' : nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
     webPreferences: {
@@ -162,7 +164,7 @@ ipcMain.on('set-zoom', (event, factor: unknown) => {
   if (!win || typeof factor !== 'number' || !(factor >= 0.5 && factor <= 2)) return
   zoom = factor
   win.webContents.setZoomFactor(factor)
-  if (isWin) win.setTitleBarOverlay(overlayColors())
+  if (hasOverlay) win.setTitleBarOverlay(overlayColors())
   if (isMac) win.setWindowButtonPosition(trafficLightPosition())
 })
 
@@ -196,7 +198,7 @@ if (!app.requestSingleInstanceLock()) {
     buildMenu()
     createWindow()
     nativeTheme.on('updated', () => {
-      if (isWin && mainWindow) mainWindow.setTitleBarOverlay(overlayColors())
+      if (hasOverlay && mainWindow) mainWindow.setTitleBarOverlay(overlayColors())
     })
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

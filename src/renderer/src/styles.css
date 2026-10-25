@@ -617,7 +617,8 @@ input {
   min-width: 0;
   min-height: 0;
 }
-.platform-win32 .gallery-wrap .list-top {
+.platform-win32 .gallery-wrap .list-top,
+.platform-linux .gallery-wrap .list-top {
   padding-right: calc(150px / var(--zoom, 1));
 }
 .gallery {
@@ -690,7 +691,8 @@ input {
   flex-direction: column;
   min-height: 0;
 }
-.platform-win32 .editor-top {
+.platform-win32 .editor-top,
+.platform-linux .editor-top {
   padding-right: calc(150px / var(--zoom, 1));
 }
 

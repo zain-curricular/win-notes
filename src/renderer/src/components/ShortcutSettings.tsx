@@ -18,6 +18,8 @@ import {
 export const OPEN_SHORTCUTS = 'notes:open-shortcuts'
 
 const mod = platform === 'mac' ? '⌘' : 'Ctrl'
+// Linux uses the Windows key rules, but the message should name the system the person is on.
+const system = platform === 'mac' ? 'macOS' : window.appInfo?.platform === 'linux' ? 'Linux' : 'Windows'
 
 function explain(problem: Problem, keys: string): string {
   const key = keyLabel(keys, platform)
@@ -27,7 +29,7 @@ function explain(problem: Problem, keys: string): string {
     case 'editor':
       return `${key} is used by the editor (${problem.builtIn}).`
     case 'reserved':
-      return `${key} belongs to ${platform === 'mac' ? 'macOS' : 'Windows'} or to copy, paste and undo.`
+      return `${key} belongs to ${system} or to copy, paste and undo.`
     case 'typing':
       return `${key} would type or move the cursor. Hold ${mod}${platform === 'win' ? ' or Alt' : ''} with it.`
   }

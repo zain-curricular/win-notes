@@ -1,7 +1,9 @@
 {
   "name": "win-notes",
   "version": "0.3.0",
-  "description": "A macOS-style Notes app for Windows and Mac with realtime cloud sync",
+  "description": "A macOS-style Notes app with realtime cloud sync",
+  "homepage": "https://github.com/zain-curricular/win-notes",
+  "desktopName": "win-notes.desktop",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -12,6 +14,7 @@
     "postinstall": "install-electron",
     "dist:win": "electron-vite build && electron-builder --win --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac --publish never",
+    "dist:linux": "electron-vite build && electron-builder --linux --publish never",
     "setup:cloud": "node scripts/setup-cloud.mjs",
     "build:editor": "node scripts/build-mobile-editor.mjs",
     "dist:android": "node scripts/build-android.mjs"
@@ -94,6 +97,41 @@
       "identity": "-",
       "hardenedRuntime": false,
       "notarize": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Office",
+      "synopsis": "Notes in the style of macOS, synced through your account",
+      "syncDesktopName": true,
+      "maintainer": "zain-curricular <zaincurricular@gmail.com>"
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
+        "libasound2"
+      ]
     },
     "protocols": [
       {
