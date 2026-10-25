@@ -49,6 +49,9 @@ type State = Persisted & {
   galleryOpen: boolean
   renamingFolderId: string | null
   focusEditorTick: number
+  // Narrow windows show the sidebar as an overlay; its open state is not saved, so the saved preference is untouched.
+  narrow: boolean
+  sidebarOverlay: boolean
 
   load: (userId: string) => void
   reset: (options?: { forget?: boolean }) => void
@@ -58,6 +61,7 @@ type State = Persisted & {
   setLayout: (layout: 'list' | 'gallery') => void
   setGalleryOpen: (open: boolean) => void
   toggleSidebar: () => void
+  setNarrow: (narrow: boolean) => void
   setSyncStatus: (s: SyncStatus) => void
   setRenamingFolder: (id: string | null) => void
   requestEditorFocus: () => void
@@ -159,6 +163,9 @@ window.addEventListener('beforeunload', saveNow)
 
 // ---- helpers ----
 
+export const sidebarVisible = (s: Pick<State, 'narrow' | 'sidebarOverlay' | 'sidebarOpen'>): boolean =>
+  s.narrow ? s.sidebarOverlay : s.sidebarOpen
+
 export function isEmptyNote(n: Note): boolean {
   return !n.body.trim()
 }
@@ -259,6 +266,8 @@ export const useStore = create<State>()((set, get) => {
     galleryOpen: false,
     renamingFolderId: null,
     focusEditorTick: 0,
+    narrow: false,
+    sidebarOverlay: false,
 
     load: (userId) => {
       let cache = readCache(userId)
@@ -303,7 +312,7 @@ export const useStore = create<State>()((set, get) => {
         if (prev && isEmptyNote(prev) && !prev.deleted_at) hardDeleteNote(prev.id)
       }
       const first = notesInView(get(), view)[0]
-      set({ view, search: '', galleryOpen: false, selectedNoteId: first?.id ?? null })
+      set({ view, search: '', galleryOpen: false, selectedNoteId: first?.id ?? null, sidebarOverlay: false })
       scheduleSave()
     },
 
@@ -323,9 +332,11 @@ export const useStore = create<State>()((set, get) => {
     },
     setGalleryOpen: (galleryOpen) => set({ galleryOpen }),
     toggleSidebar: () => {
+      if (get().narrow) return set({ sidebarOverlay: !get().sidebarOverlay })
       set({ sidebarOpen: !get().sidebarOpen })
       scheduleSave()
     },
+    setNarrow: (narrow) => set({ narrow, sidebarOverlay: false }),
     setSyncStatus: (syncStatus) => {
       if (get().syncStatus !== syncStatus) set({ syncStatus })
     },

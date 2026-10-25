@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { parseAuthLink, UNUSABLE_LINK } from './lib/authLink'
 import { supabase } from './lib/supabase'
-import { useStore } from './lib/store'
+import { sidebarVisible, useStore } from './lib/store'
 import { flushNow, startSync, stopSync } from './lib/sync'
 import { Sidebar } from './components/Sidebar'
 import { Gallery, ListHeader, NoteList } from './components/NoteList'
@@ -59,12 +59,27 @@ function useZoom(): void {
   }, [])
 }
 
+// Below this width the sidebar would squeeze the editor until its toolbar no longer fits.
+const NARROW = '(max-width: 979px)'
+
+function useNarrowWindow(): void {
+  useEffect(() => {
+    const query = window.matchMedia(NARROW)
+    const apply = (): void => useStore.getState().setNarrow(query.matches)
+    apply()
+    query.addEventListener('change', apply)
+    return () => query.removeEventListener('change', apply)
+  }, [])
+}
+
 function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () => void; onSignIn: () => void }): ReactNode {
-  const sidebarOpen = useStore((s) => s.sidebarOpen)
+  const sidebarOpen = useStore(sidebarVisible)
+  const narrow = useStore((s) => s.narrow)
   const layout = useStore((s) => s.layout)
   const galleryOpen = useStore((s) => s.galleryOpen)
   const hasSelection = useStore((s) => !!s.selectedNoteId)
   useAppShortcuts()
+  useNarrowWindow()
   // Tooltips and menus show the current keys, so everything re-renders when one changes.
   useSyncExternalStore(onShortcutsChange, shortcutsVersion)
 
@@ -72,7 +87,7 @@ function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () =
   const showGalleryEditor = galleryMode && galleryOpen && hasSelection
 
   return (
-    <div className="shell" data-sidebar={sidebarOpen ? 'open' : 'closed'}>
+    <div className={`shell${narrow ? ' narrow' : ''}`} data-sidebar={sidebarOpen && !narrow ? 'open' : 'closed'}>
       <motion.div
         className="sidebar-wrap"
         initial={false}
@@ -81,6 +96,18 @@ function Shell({ email, onSignOut, onSignIn }: { email?: string; onSignOut: () =
       >
         <Sidebar email={email} onSignOut={onSignOut} onSignIn={onSignIn} />
       </motion.div>
+      <AnimatePresence>
+        {narrow && sidebarOpen ? (
+          <motion.div
+            key="scrim"
+            className="sidebar-scrim"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => useStore.getState().toggleSidebar()}
+          />
+        ) : null}
+      </AnimatePresence>
       <div className="main">
         {galleryMode ? (
           <AnimatePresence mode="wait" initial={false}>

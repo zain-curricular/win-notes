@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Folder, LayoutGrid, List, PanelLeft, Pin, Search, SquarePen, Trash2 } from 'lucide-react'
 import { SearchField } from './SearchField'
-import { TRASH_DAYS, useStore, visibleNotes, type Note } from '../lib/store'
+import { sidebarVisible, TRASH_DAYS, useStore, visibleNotes, type Note } from '../lib/store'
 import { groupLabel, rowDate } from '../lib/dates'
 import { openContextMenu, ToolButton, type MenuItem } from './ui'
 import { shortcuts } from '../lib/shortcuts'
@@ -140,7 +140,9 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
   const search = useStore((s) => s.search)
   const folders = useStore((s) => s.folders)
   const layout = useStore((s) => s.layout)
-  const sidebarOpen = useStore((s) => s.sidebarOpen)
+  const sidebarOpen = useStore(sidebarVisible)
+  // Narrow windows keep the title readable; deleting stays on the note's menus and the Delete key.
+  const narrow = useStore((s) => s.narrow)
   const selected = useStore((s) => (s.selectedNoteId ? s.notes[s.selectedNoteId] : null))
   const count = useStore((s) => visibleNotes(s).length)
   const { setLayout, deleteNote, toggleSidebar, emptyTrash, createNote } = useStore.getState()
@@ -153,10 +155,14 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
         </ToolButton>
       ) : null}
       <div className="list-heading">
-        <div className="list-title">{viewTitle(view, folders, search)}</div>
-        <div className="list-count">
-          {count} {count === 1 ? 'note' : 'notes'}
+        <div className="list-title" title={viewTitle(view, folders, search)}>
+          {viewTitle(view, folders, search)}
         </div>
+        {narrow ? null : (
+          <div className="list-count">
+            {count} {count === 1 ? 'note' : 'notes'}
+          </div>
+        )}
       </div>
       <div className="segmented">
         <button className={layout === 'list' ? 'on' : ''} title={`List (${shortcuts.label('listLayout')})`} onClick={() => setLayout('list')}>
@@ -170,7 +176,7 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
         <button className="text-btn" onClick={emptyTrash} disabled={!count}>
           Delete All
         </button>
-      ) : (
+      ) : narrow ? null : (
         <ToolButton label="Delete" disabled={!selected} onClick={() => selected && deleteNote(selected.id)}>
           <Trash2 size={16} />
         </ToolButton>

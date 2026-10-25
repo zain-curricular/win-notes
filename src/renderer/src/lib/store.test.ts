@@ -7,7 +7,7 @@ vi.stubGlobal('localStorage', {
   removeItem: (k: string) => void saved.delete(k)
 })
 vi.stubGlobal('window', { addEventListener: () => {} })
-const { useStore } = await import('./store')
+const { useStore, sidebarVisible } = await import('./store')
 
 const signedIn = async (userId: string, { unsynced }: { unsynced: boolean }): Promise<void> => {
   const store = useStore.getState()
@@ -43,3 +43,26 @@ describe('signing out', () => {
     expect(saved.has('win-notes:local')).toBe(true)
   })
 })
+
+describe('the sidebar in a narrow window', () => {
+  beforeEach(() => {
+    saved.clear()
+    useStore.getState().reset()
+    useStore.getState().load('local')
+    useStore.getState().setNarrow(false)
+  })
+
+  it('opens as an overlay without changing the saved preference, and closes when a folder is chosen', () => {
+    const store = useStore.getState()
+    store.setNarrow(true)
+    expect(sidebarVisible(useStore.getState())).toBe(false)
+    store.toggleSidebar()
+    expect(sidebarVisible(useStore.getState())).toBe(true)
+    expect(useStore.getState().sidebarOpen).toBe(true)
+    store.setView('all')
+    expect(sidebarVisible(useStore.getState())).toBe(false)
+    store.setNarrow(false)
+    expect(sidebarVisible(useStore.getState())).toBe(true)
+  })
+})
+
