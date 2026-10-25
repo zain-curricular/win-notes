@@ -1,6 +1,6 @@
 {
   "name": "win-notes",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A macOS-style Notes app with realtime cloud sync",
   "homepage": "https://github.com/zain-curricular/win-notes",
   "desktopName": "win-notes.desktop",
