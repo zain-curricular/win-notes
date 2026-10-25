@@ -11,6 +11,19 @@ export const pop = {
   transition: { duration: 0.14, ease: [0.2, 0.8, 0.2, 1] as const }
 }
 
+// Menus and popovers take focus only when opened from the keyboard, so a mouse user's cursor stays in the note.
+let keyboardOpened = false
+window.addEventListener('keydown', () => (keyboardOpened = true), true)
+window.addEventListener('pointerdown', () => (keyboardOpened = false), true)
+
+const FOCUSABLE = 'button:not(:disabled), [role="menuitem"]:not(.disabled), input, [tabindex="0"]'
+
+function focusFirst(root: HTMLElement | null): boolean {
+  const el = root?.querySelector<HTMLElement>(FOCUSABLE)
+  el?.focus()
+  return !!el
+}
+
 // ---------- Menus ----------
 
 export type MenuItem =
@@ -26,10 +39,36 @@ export type MenuItem =
     }
   | 'separator'
 
-export function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () => void }): ReactNode {
+export function MenuList({ items, onClose, onBack }: { items: MenuItem[]; onClose: () => void; onBack?: () => void }): ReactNode {
   const [openSub, setOpenSub] = useState<number | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+  const rows = (): HTMLElement[] => [...(ref.current?.querySelectorAll<HTMLElement>(':scope > [role="menuitem"]:not(.disabled)') ?? [])]
+  const actionable = items.filter((x): x is Exclude<MenuItem, 'separator'> => x !== 'separator' && !x.disabled)
+
+  useEffect(() => {
+    if (onBack) focusFirst(ref.current)
+  }, [onBack])
+
+  const onKeyDown = (e: React.KeyboardEvent): void => {
+    const list = rows()
+    const at = list.indexOf(document.activeElement as HTMLElement)
+    if (at === -1) return
+    const item = actionable[at]
+    const move = (to: number): void => list[(to + list.length) % list.length]?.focus()
+    if (e.key === 'ArrowDown') move(at + 1)
+    else if (e.key === 'ArrowUp') move(at - 1)
+    else if (e.key === 'Home') move(0)
+    else if (e.key === 'End') move(list.length - 1)
+    else if ((e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') && item?.submenu) setOpenSub(items.indexOf(item))
+    else if (e.key === 'Enter' || e.key === ' ') list[at].click()
+    else if (e.key === 'ArrowLeft' && onBack) onBack()
+    else return
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
   return (
-    <div className="menu" role="menu">
+    <div className="menu" role="menu" ref={ref} onKeyDown={onKeyDown}>
       {items.map((item, i) =>
         item === 'separator' ? (
           <div key={i} className="menu-sep" />
@@ -38,6 +77,11 @@ export function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () =>
             key={i}
             className={`menu-item${item.danger ? ' danger' : ''}${item.disabled ? ' disabled' : ''}${openSub === i ? ' sub-open' : ''}`}
             role="menuitem"
+            tabIndex={-1}
+            aria-disabled={item.disabled || undefined}
+            aria-haspopup={item.submenu ? 'menu' : undefined}
+            aria-expanded={item.submenu ? openSub === i : undefined}
+            aria-checked={item.checked === undefined ? undefined : item.checked}
             onMouseEnter={() => setOpenSub(item.submenu ? i : null)}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
@@ -54,7 +98,11 @@ export function MenuList({ items, onClose }: { items: MenuItem[]; onClose: () =>
             <AnimatePresence>
               {item.submenu && openSub === i ? (
                 <motion.div className="submenu" {...pop} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                  <MenuList items={item.submenu} onClose={onClose} />
+                  <MenuList
+                    items={item.submenu}
+                    onClose={onClose}
+                    onBack={keyboardOpened ? () => (setOpenSub(null), rows()[actionable.indexOf(item)]?.focus()) : undefined}
+                  />
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -71,11 +119,19 @@ const useContextMenuStore = create<{ menu: ContextMenuState; set: (m: ContextMen
   set: (menu) => set({ menu })
 }))
 
-export function openContextMenu(e: React.MouseEvent, items: MenuItem[]): void {
+export function openContextMenu(e: React.MouseEvent | React.KeyboardEvent, items: MenuItem[]): void {
   e.preventDefault()
   e.stopPropagation()
-  useContextMenuStore.getState().set({ x: e.clientX, y: e.clientY, items })
+  if ('clientX' in e) return openContextMenuAt(e.clientX, e.clientY, items)
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  openContextMenuAt(r.left + 16, r.bottom - 4, items)
 }
+
+export function openContextMenuAt(x: number, y: number, items: MenuItem[]): void {
+  useContextMenuStore.getState().set({ x, y, items })
+}
+
+export const isContextMenuKey = (e: React.KeyboardEvent): boolean => e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')
 
 export function ContextMenuLayer(): ReactNode {
   const { menu, set } = useContextMenuStore()
@@ -93,10 +149,16 @@ export function ContextMenuLayer(): ReactNode {
 
   useEffect(() => {
     if (!menu) return
+    const before = document.activeElement as HTMLElement | null
     const close = (): void => set(null)
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') close()
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !ref.current?.contains(document.activeElement)) {
+        e.preventDefault()
+        focusFirst(ref.current)
+      }
     }
+    if (keyboardOpened) requestAnimationFrame(() => focusFirst(ref.current))
     window.addEventListener('mousedown', close)
     window.addEventListener('blur', close)
     window.addEventListener('resize', close)
@@ -106,6 +168,7 @@ export function ContextMenuLayer(): ReactNode {
       window.removeEventListener('blur', close)
       window.removeEventListener('resize', close)
       window.removeEventListener('keydown', onKey)
+      if (ref.current?.contains(document.activeElement) || document.activeElement === document.body) before?.focus()
     }
   }, [menu, set])
 
@@ -146,6 +209,9 @@ export function Popover({
 }): ReactNode {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ left: number; top: number; up: boolean } | null>(null)
+  // Callers pass a new onClose on every render; the open/close effect must run once per opening.
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
 
   useLayoutEffect(() => {
     if (!open || !anchor.current) return
@@ -161,6 +227,8 @@ export function Popover({
 
   useEffect(() => {
     if (!open) return
+    const before = document.activeElement as HTMLElement | null
+    const onClose = (): void => closeRef.current()
     const onDown = (e: MouseEvent): void => {
       const t = e.target as Node
       if (ref.current?.contains(t) || anchor.current?.contains(t)) return
@@ -168,7 +236,12 @@ export function Popover({
     }
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowDown' && !ref.current?.contains(document.activeElement)) {
+        e.preventDefault()
+        focusFirst(ref.current)
+      }
     }
+    if (keyboardOpened) requestAnimationFrame(() => focusFirst(ref.current))
     window.addEventListener('mousedown', onDown)
     window.addEventListener('keydown', onKey)
     window.addEventListener('blur', onClose)
@@ -176,8 +249,9 @@ export function Popover({
       window.removeEventListener('mousedown', onDown)
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('blur', onClose)
+      if (ref.current?.contains(document.activeElement) || document.activeElement === document.body) before?.focus()
     }
-  }, [open, onClose, anchor])
+  }, [open, anchor])
 
   return createPortal(
     <AnimatePresence>
@@ -227,4 +301,37 @@ export function ToolButton({
       {children}
     </button>
   )
+}
+
+/** Keeps Tab inside an open dialog and gives focus back to where it was when the dialog closes. */
+export function useDialogFocus(ref: RefObject<HTMLElement | null>, open: boolean, paused = false): void {
+  const pausedRef = useRef(paused)
+  pausedRef.current = paused
+  useEffect(() => {
+    if (!open) return
+    const before = document.activeElement as HTMLElement | null
+    const raf = requestAnimationFrame(() => {
+      if (!ref.current?.contains(document.activeElement)) focusFirst(ref.current)
+    })
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Tab' || pausedRef.current || !ref.current) return
+      const items = [...ref.current.querySelectorAll<HTMLElement>('button:not(:disabled), input, textarea, select, a[href], [tabindex="0"]')]
+      if (!items.length) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (e.shiftKey && (document.activeElement === first || !ref.current.contains(document.activeElement))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (document.activeElement === last || !ref.current.contains(document.activeElement))) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('keydown', onKey, true)
+      if (before && document.contains(before)) before.focus()
+    }
+  }, [ref, open])
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { RotateCcw, Search, X } from 'lucide-react'
@@ -14,6 +14,7 @@ import {
   shortcutsVersion,
   type ShortcutId
 } from '../lib/shortcuts'
+import { useDialogFocus } from './ui'
 
 export const OPEN_SHORTCUTS = 'notes:open-shortcuts'
 
@@ -45,6 +46,8 @@ export function ShortcutSettings(): ReactNode {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState('')
   const [recording, setRecording] = useState<ShortcutId | null>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(sheetRef, open, recording !== null)
   const [error, setError] = useState<{ id: ShortcutId; text: string } | null>(null)
   useSyncExternalStore(onShortcutsChange, shortcutsVersion)
   const overrides = currentOverrides()
@@ -118,8 +121,10 @@ export function ShortcutSettings(): ReactNode {
       {open ? (
         <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={close}>
           <motion.div
+            ref={sheetRef}
             className="sheet shortcut-sheet"
             role="dialog"
+            aria-modal="true"
             aria-label="Keyboard Shortcuts"
             initial={{ opacity: 0, scale: 0.97, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

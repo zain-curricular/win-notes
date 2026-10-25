@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Cloud, CloudOff, Download, Folder, FolderPlus, HardDrive, Keyboard, KeyRound, LogOut, PanelLeft, RefreshCw, Trash2, UserRound, X } from 'lucide-react'
 import { useStore, type View } from '../lib/store'
-import { openContextMenu, Popover, ToolButton } from './ui'
+import { isContextMenuKey, openContextMenu, Popover, ToolButton, type MenuItem } from './ui'
 import { shortcuts } from '../lib/shortcuts'
 import { OPEN_SHORTCUTS } from './ShortcutSettings'
 import { OPEN_VAULT } from './VaultSheet'
@@ -28,34 +28,50 @@ function FolderRow({
   const renaming = useStore((s) => s.renamingFolderId === view)
   const { setView, moveNote, renameFolder, deleteFolder, setRenamingFolder, createNote } = useStore.getState()
   const [over, setOver] = useState(false)
+  const rowRef = useRef<HTMLDivElement>(null)
 
   const commit = (value: string): void => {
     renameFolder(view, value)
     setRenamingFolder(null)
   }
 
+  const menu = (): MenuItem[] => [
+    { label: 'New Note', onSelect: () => (setView(view === 'deleted' ? 'notes' : view), createNote()) },
+    ...(editable
+      ? ([
+          'separator',
+          { label: 'Rename Folder', onSelect: () => setRenamingFolder(view) },
+          { label: 'Delete Folder', danger: true, onSelect: () => deleteFolder(view) }
+        ] as const)
+      : [])
+  ]
+
   return (
     <motion.div
+      ref={rowRef}
       layout="position"
       initial={{ opacity: 0, x: -6 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.16 }}
       className={`folder-row${active ? ' active' : ''}${over ? ' drop-over' : ''}`}
+      role="button"
+      tabIndex={renaming ? -1 : 0}
+      aria-current={active ? 'page' : undefined}
+      aria-label={`${name}, ${count} ${count === 1 ? 'note' : 'notes'}`}
       onClick={() => setView(view)}
       onDoubleClick={() => editable && setRenamingFolder(view)}
-      onContextMenu={(e) =>
-        openContextMenu(e, [
-          { label: 'New Note', onSelect: () => (setView(view === 'deleted' ? 'notes' : view), createNote()) },
-          ...(editable
-            ? ([
-                'separator',
-                { label: 'Rename Folder', onSelect: () => setRenamingFolder(view) },
-                { label: 'Delete Folder', danger: true, onSelect: () => deleteFolder(view) }
-              ] as const)
-            : [])
-        ])
-      }
+      onContextMenu={(e) => openContextMenu(e, menu())}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          setView(view)
+        } else if (e.key === 'F2' && editable) {
+          e.preventDefault()
+          setRenamingFolder(view)
+        } else if (isContextMenuKey(e)) openContextMenu(e, menu())
+      }}
       onDragOver={(e) => {
         if (!droppable || !e.dataTransfer.types.includes(NOTE_MIME)) return
         e.preventDefault()
@@ -69,7 +85,9 @@ function FolderRow({
         if (id) moveNote(id, view === 'notes' ? null : view)
       }}
     >
-      <span className="folder-icon">{icon}</span>
+      <span className="folder-icon" aria-hidden>
+        {icon}
+      </span>
       {renaming ? (
         <input
           className="folder-rename"
@@ -81,12 +99,15 @@ function FolderRow({
           onKeyDown={(e) => {
             if (e.key === 'Enter') commit(e.currentTarget.value)
             if (e.key === 'Escape') setRenamingFolder(null)
+            if (e.key === 'Enter' || e.key === 'Escape') requestAnimationFrame(() => rowRef.current?.focus())
           }}
         />
       ) : (
         <span className="folder-name">{name}</span>
       )}
-      <span className="folder-count">{count || ''}</span>
+      <span className="folder-count" aria-hidden>
+        {count || ''}
+      </span>
     </motion.div>
   )
 }
@@ -212,7 +233,7 @@ export function Sidebar({ email, onSignOut, onSignIn }: { email?: string; onSign
         </ToolButton>
       </div>
 
-      <div className="sidebar-scroll">
+      <nav className="sidebar-scroll" aria-label="Folders">
         <div className="sidebar-section">{email ? 'Cloud' : 'On My Computer'}</div>
         <FolderRow view="all" name="All Notes" count={counts.all} icon={folderIcon} />
         <FolderRow view="notes" name="Notes" count={counts.notes} icon={folderIcon} droppable />
@@ -224,7 +245,7 @@ export function Sidebar({ email, onSignOut, onSignIn }: { email?: string; onSign
             <FolderRow key="deleted" view="deleted" name="Recently Deleted" count={counts.deleted} icon={<Trash2 size={16} strokeWidth={1.8} />} />
           ) : null}
         </AnimatePresence>
-      </div>
+      </nav>
 
       <div className="sidebar-bottom">
         <UpdateNotice />

@@ -4,7 +4,7 @@ import { Folder, LayoutGrid, List, PanelLeft, Pin, Search, SquarePen, Trash2 } f
 import { SearchField } from './SearchField'
 import { sidebarVisible, TRASH_DAYS, useStore, visibleNotes, type Note } from '../lib/store'
 import { groupLabel, rowDate } from '../lib/dates'
-import { openContextMenu, ToolButton, type MenuItem } from './ui'
+import { isContextMenuKey, openContextMenu, openContextMenuAt, ToolButton, type MenuItem } from './ui'
 import { shortcuts } from '../lib/shortcuts'
 
 const NOTE_MIME = 'application/x-note-id'
@@ -74,6 +74,9 @@ function NoteRow({ note, showFolder }: { note: Note; showFolder: boolean }): Rea
       exit={{ opacity: 0, x: -16, transition: { duration: 0.14 } }}
       transition={{ type: 'spring', stiffness: 520, damping: 40, mass: 0.6 }}
       className={`note-row${selected ? ' selected' : ''}`}
+      id={`note-${note.id}`}
+      role="option"
+      aria-selected={selected}
       draggable={!note.deleted_at}
       onDragStart={(e) => {
         const dt = (e as unknown as React.DragEvent).dataTransfer
@@ -116,6 +119,13 @@ function useListKeys(notes: Note[]): (e: React.KeyboardEvent) => void {
     } else if (e.key === 'Enter' && s.selectedNoteId) {
       e.preventDefault()
       s.requestEditorFocus()
+    } else if (isContextMenuKey(e) && s.selectedNoteId) {
+      const note = s.notes[s.selectedNoteId]
+      const row = document.getElementById(`note-${s.selectedNoteId}`)
+      if (!note || !row) return
+      e.preventDefault()
+      const r = row.getBoundingClientRect()
+      openContextMenuAt(r.left + 16, r.bottom - 4, noteMenu(note))
     }
   }
 }
@@ -203,7 +213,14 @@ export function NoteList(): ReactNode {
   return (
     <div className="note-list">
       <ListHeader withToggle />
-      <div className="note-list-scroll" tabIndex={0} onKeyDown={onKeyDown}>
+      <div
+        className="note-list-scroll"
+        tabIndex={0}
+        role="listbox"
+        aria-label={viewTitle(state.view, state.folders, state.search)}
+        aria-activedescendant={state.selectedNoteId && notes.some((n) => n.id === state.selectedNoteId) ? `note-${state.selectedNoteId}` : undefined}
+        onKeyDown={onKeyDown}
+      >
         {notes.length === 0 ? <EmptyList view={state.view} search={state.search} /> : null}
         <AnimatePresence initial={false}>
           {groups.flatMap((g) => [

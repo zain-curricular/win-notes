@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Copy, Eye, EyeOff, Lock, Pencil, Plus, Search, Trash2, Wand2, X } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { DEFAULT_GENERATOR, generatePassword, MAX_LENGTH, MIN_LENGTH, type GeneratorOptions } from '../lib/passwordGenerator'
+import { useDialogFocus } from './ui'
 
 export const OPEN_VAULT = 'notes:open-vault'
 const MIN_MASTER = 12
@@ -51,6 +52,8 @@ export function VaultSheet(): ReactNode {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [copied, setCopied] = useState(false)
   const lastTouch = useRef(0)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(sheetRef, open)
 
   const forgetShown = useCallback((): void => {
     setEntries([])
@@ -391,8 +394,10 @@ export function VaultSheet(): ReactNode {
       {open ? (
         <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={close}>
           <motion.div
+            ref={sheetRef}
             className="sheet vault-sheet"
             role="dialog"
+            aria-modal="true"
             aria-label="Secure Vault"
             initial={{ opacity: 0, scale: 0.97, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
