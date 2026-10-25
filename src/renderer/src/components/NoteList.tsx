@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Folder, LayoutGrid, List, PanelLeft, Pin, SquarePen, Trash2 } from 'lucide-react'
+import { Folder, LayoutGrid, List, PanelLeft, Pin, Search, SquarePen, Trash2 } from 'lucide-react'
 import { SearchField } from './SearchField'
-import { useStore, visibleNotes, type Note } from '../lib/store'
+import { TRASH_DAYS, useStore, visibleNotes, type Note } from '../lib/store'
 import { groupLabel, rowDate } from '../lib/dates'
 import { openContextMenu, ToolButton, type MenuItem } from './ui'
 import { shortcuts } from '../lib/shortcuts'
@@ -121,9 +121,16 @@ function useListKeys(notes: Note[]): (e: React.KeyboardEvent) => void {
 }
 
 function EmptyList({ view, search }: { view: string; search: string }): ReactNode {
+  const [icon, title, text] = search.trim()
+    ? [<Search key="i" size={28} strokeWidth={1.5} />, 'No results', `Nothing matches “${search.trim()}”.`]
+    : view === 'deleted'
+      ? [<Trash2 key="i" size={28} strokeWidth={1.5} />, 'Nothing here', `Deleted notes wait here for ${TRASH_DAYS} days.`]
+      : [<SquarePen key="i" size={28} strokeWidth={1.5} />, 'No notes yet', `Press ${shortcuts.label('newNote')} to write one.`]
   return (
-    <motion.div className="empty-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }}>
-      {search.trim() ? 'No Results' : view === 'deleted' ? 'No Recently Deleted Notes' : 'No Notes'}
+    <motion.div className="empty-state empty-list" role="status" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }}>
+      {icon}
+      <strong>{title}</strong>
+      <p>{text}</p>
     </motion.div>
   )
 }

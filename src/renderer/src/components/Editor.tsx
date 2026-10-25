@@ -474,9 +474,14 @@ export function EditorPane({ onBack }: { onBack?: () => void }): ReactNode {
         {note ? (
           <NoteEditor key={noteKey} note={note} onEditor={onEditor} />
         ) : (
-          <motion.div key="empty" className="editor-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <SquarePen size={34} strokeWidth={1.4} />
-            <div>Select a note or press {shortcuts.label('newNote')} to write a new one.</div>
+          <motion.div key="empty" className="editor-empty empty-state" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <SquarePen size={32} strokeWidth={1.4} aria-hidden />
+            <strong>No note selected</strong>
+            <p>Choose a note from the list, or start a new one.</p>
+            <button className="empty-action" onClick={() => useStore.getState().createNote()}>
+              <SquarePen size={14} aria-hidden /> New Note
+              <span className="menu-shortcut">{shortcuts.label('newNote')}</span>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

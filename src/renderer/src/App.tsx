@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { parseAuthLink, UNUSABLE_LINK } from './lib/authLink'
 import { supabase } from './lib/supabase'
 import { useStore } from './lib/store'
@@ -166,23 +166,25 @@ export default function App(): ReactNode {
   if (session === undefined) return <div className="boot" />
 
   return (
-    <AnimatePresence mode="wait">
-      {userId ? (
-        <motion.div key={`shell-${userId}`} className="fill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-          <Shell email={session?.user.email} onSignOut={signOut} onSignIn={signIn} />
-        </motion.div>
-      ) : (
-        <motion.div key="auth" className="fill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-          <AuthScreen
-            key={authNotice ?? 'auth'}
-            notice={authNotice}
-            onOffline={() => {
-              localStorage.setItem(MODE_KEY, 'local')
-              setLocalMode(true)
-            }}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence mode="wait">
+        {userId ? (
+          <motion.div key={`shell-${userId}`} className="fill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <Shell email={session?.user.email} onSignOut={signOut} onSignIn={signIn} />
+          </motion.div>
+        ) : (
+          <motion.div key="auth" className="fill" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <AuthScreen
+              key={authNotice ?? 'auth'}
+              notice={authNotice}
+              onOffline={() => {
+                localStorage.setItem(MODE_KEY, 'local')
+                setLocalMode(true)
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   )
 }
