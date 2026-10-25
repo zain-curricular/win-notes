@@ -9,6 +9,7 @@
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "postinstall": "install-electron",
     "dist:win": "electron-vite build && electron-builder --win --publish never",
     "dist:mac": "electron-vite build && electron-builder --mac --publish never",
     "setup:cloud": "node scripts/setup-cloud.mjs",
@@ -97,7 +98,6 @@
     ]
   },
   "allowScripts": {
-    "electron@44.9.1": true,
     "esbuild@0.25.12": true,
     "esbuild@0.28.2": true,
     "fsevents@2.3.3": true,
