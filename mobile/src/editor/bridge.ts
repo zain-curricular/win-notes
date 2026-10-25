@@ -5,6 +5,22 @@ export type BlockStyle = 'title' | 'heading' | 'subheading' | 'body' | 'mono'
 export type ListKind = 'bullet' | 'dashed' | 'ordered' | 'task'
 export type HighlightColor = 'purple' | 'pink' | 'orange' | 'mint' | 'blue'
 export const HIGHLIGHT_COLORS: HighlightColor[] = ['purple', 'pink', 'orange', 'mint', 'blue']
+// The formats and titles of the desktop Change Case menu (src/renderer/src/editor/changeCase.ts); a test keeps them equal.
+export const CASE_FORMATS = [
+  { format: 'upper', label: 'UPPERCASE' },
+  { format: 'lower', label: 'lowercase' },
+  { format: 'title', label: 'Title Case' },
+  { format: 'sentence', label: 'Sentence case' },
+  { format: 'camel', label: 'camelCase' },
+  { format: 'pascal', label: 'PascalCase' },
+  { format: 'snake', label: 'snake_case' },
+  { format: 'screamingSnake', label: 'SCREAMING_SNAKE_CASE' },
+  { format: 'kebab', label: 'kebab-case' },
+  { format: 'screamingKebab', label: 'SCREAMING-KEBAB-CASE' },
+  { format: 'dot', label: 'dot.case' },
+  { format: 'path', label: 'path/case' },
+  { format: 'toggle', label: 'Toggle Case' }
+] as const
 
 export type EditorState = {
   style: BlockStyle

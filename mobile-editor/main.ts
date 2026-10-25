@@ -19,6 +19,7 @@ import {
   type HighlightColor,
   type ListKind
 } from '../src/renderer/src/editor/commands'
+import { CASE_COMMANDS, changeCase } from '../src/renderer/src/editor/changeCase'
 import { hasBoxTable, normalizeHtml, plainTextToDom } from '../src/renderer/src/lib/paste'
 import { toMarkdown } from '../src/renderer/src/lib/markdown'
 import './editor.css'
@@ -218,6 +219,12 @@ function command(name: string, arg?: unknown): void {
     case 'toggleChecked':
       toggleChecked(ed)
       break
+    case 'changeCase': {
+      const known = CASE_COMMANDS.find((c) => c.format === arg)
+      const tr = known && changeCase(editor.state, known.format)
+      if (tr) editor.view.dispatch(tr)
+      break
+    }
     case 'undo':
       chain.undo().run()
       break

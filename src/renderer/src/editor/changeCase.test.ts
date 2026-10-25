@@ -3,7 +3,9 @@ import type { JSONContent } from '@tiptap/core'
 import type { Node } from '@tiptap/pm/model'
 import { history, undo } from '@tiptap/pm/history'
 import { EditorState, SelectionRange, TextSelection, type Transaction } from '@tiptap/pm/state'
-import { changeCase } from './changeCase'
+import { CASE_COMMANDS, changeCase } from './changeCase'
+import { SHORTCUTS } from '../lib/shortcuts'
+import { CASE_FORMATS } from '../../../../mobile/src/editor/bridge'
 import { MultiSelection } from './multiSelection'
 import { br, doc, h, p, text } from './testDoc'
 
@@ -84,4 +86,8 @@ describe('Change Case', () => {
     expect(json(undone!.doc)).toEqual(json(note))
     expect(changeCase(stateOf(note, at(note, 'one'), at(note, 'one', 3)), 'lower')).toBeNull()
   })
+})
+
+it('offers the phone the same formats, titled as on the desktop', () => {
+  expect(CASE_FORMATS).toEqual(CASE_COMMANDS.map(({ id, format }) => ({ format, label: SHORTCUTS[id].title })))
 })

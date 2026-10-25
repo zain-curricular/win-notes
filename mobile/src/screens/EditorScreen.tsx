@@ -11,7 +11,7 @@ import { useTheme, type Theme } from '../theme'
 import { BarButton, TopBar } from '../components/TopBar'
 import { ActionSheet, type SheetItem } from '../components/ActionSheet'
 import { EDITOR_HTML } from '../editor/editorHtml'
-import { bridgeScript, HIGHLIGHT_COLORS, INITIAL_STATE, type BlockStyle, type EditorState, type FromEditor, type HighlightColor, type ListKind, type ToEditor } from '../editor/bridge'
+import { bridgeScript, CASE_FORMATS, HIGHLIGHT_COLORS, INITIAL_STATE, type BlockStyle, type EditorState, type FromEditor, type HighlightColor, type ListKind, type ToEditor } from '../editor/bridge'
 import { moveMenu, noteMenu } from './NotesScreen'
 import type { ScreenProps } from '../navigation'
 
@@ -134,6 +134,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
   const [focused, setFocused] = useState(false)
   const [formatOpen, setFormatOpen] = useState(false)
   const [tableOpen, setTableOpen] = useState(false)
+  const [caseOpen, setCaseOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
 
@@ -257,6 +258,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
     : []
 
   const tableItems: SheetItem[] = TABLE_OPS.map((o) => ({ label: o.label, danger: o.danger, onPress: () => cmd('tableOp', o.op) }))
+  const caseItems: SheetItem[] = CASE_FORMATS.map((c) => ({ label: c.label, onPress: () => cmd('changeCase', c.format) }))
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -305,6 +307,9 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
             <ToolButton t={t} label="Format" onPress={() => setFormatOpen(true)}>
               <Text style={{ color: t.text, fontSize: 17, fontWeight: '600' }}>Aa</Text>
             </ToolButton>
+            <ToolButton t={t} label="Change Case" onPress={() => setCaseOpen(true)}>
+              <Text style={{ color: t.text, fontSize: 15, fontWeight: '600' }}>aA</Text>
+            </ToolButton>
             <ToolButton t={t} label="Checklist" active={st.task} onPress={() => cmd('list', 'task')}>
               <Ionicons name="checkbox-outline" size={22} color={t.text} />
             </ToolButton>
@@ -350,6 +355,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
 
       <FormatSheet visible={formatOpen} st={st} t={t} cmd={cmd} onClose={() => setFormatOpen(false)} />
       <ActionSheet visible={tableOpen} title="Table" items={tableItems} onClose={() => setTableOpen(false)} />
+      <ActionSheet visible={caseOpen} title="Change Case" items={caseItems} onClose={() => setCaseOpen(false)} />
       <ActionSheet visible={moreOpen} title={note?.title || 'New Note'} items={moreItems} onClose={() => setMoreOpen(false)} />
       <ActionSheet visible={moveOpen} title="Move To" items={note ? moveMenu(note) : []} onClose={() => setMoveOpen(false)} />
     </View>
