@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useStore, viewTitle, visibleNotes, type Note } from '../lib/store'
+import { TRASH_DAYS, useStore, viewTitle, visibleNotes, type Note } from '../lib/store'
 import { groupLabel, rowDate } from '../lib/dates'
 import { useTheme, type Theme } from '../theme'
 import { BarButton, TopBar } from '../components/TopBar'
@@ -71,13 +71,21 @@ export function moveMenu(note: Note): SheetItem[] {
 function NoteRow({ note, showFolder, t, onPress, onLongPress }: { note: Note; showFolder: boolean; t: Theme; onPress: () => void; onLongPress: () => void }) {
   const folderName = useStore((s) => (note.folder_id ? s.folders[note.folder_id]?.name : undefined) ?? 'Notes')
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} android_ripple={{ color: t.ripple }} style={[styles.row, { borderBottomColor: t.sep }]}>
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      android_ripple={{ color: t.ripple }}
+      style={[styles.row, { borderBottomColor: t.sep }]}
+      accessibilityRole="button"
+      accessibilityLabel={`${note.title || 'New Note'}, ${rowDate(note.updated_at)}, ${note.snippet || 'No additional text'}${showFolder ? `, in ${folderName}` : ''}`}
+      accessibilityHint="Touch and hold for more options"
+    >
       <Text style={[styles.title, { color: t.text }]} numberOfLines={1}>
         {note.title || 'New Note'}
       </Text>
       <View style={styles.meta}>
-        <Text style={[styles.date, { color: t.text }]}>{rowDate(note.updated_at)}</Text>
-        <Text style={[styles.snippet, { color: t.text2 }]} numberOfLines={1}>
+        <Text style={[styles.date, { color: t.text2 }]}>{rowDate(note.updated_at)}</Text>
+        <Text style={[styles.snippet, { color: t.text3 }]} numberOfLines={1}>
           {note.snippet || 'No additional text'}
         </Text>
       </View>
@@ -128,9 +136,9 @@ export function NotesScreen({ navigation }: ScreenProps<'Notes'>) {
       {!deleted ? (
         <View style={[styles.search, { backgroundColor: t.field }]}>
           <Ionicons name="search" size={16} color={t.text3} />
-          <TextInput value={search} onChangeText={(q) => useStore.getState().setSearch(q)} placeholder="Search" placeholderTextColor={t.text3} style={[styles.searchInput, { color: t.text }]} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
+          <TextInput value={search} onChangeText={(q) => useStore.getState().setSearch(q)} placeholder="Search" accessibilityLabel="Search notes" placeholderTextColor={t.text3} style={[styles.searchInput, { color: t.text }]} autoCorrect={false} returnKeyType="search" clearButtonMode="while-editing" />
           {search ? (
-            <Pressable onPress={() => useStore.getState().setSearch('')} hitSlop={8}>
+            <Pressable onPress={() => useStore.getState().setSearch('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear search">
               <Ionicons name="close-circle" size={18} color={t.text3} />
             </Pressable>
           ) : null}
@@ -144,12 +152,22 @@ export function NotesScreen({ navigation }: ScreenProps<'Notes'>) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         renderSectionHeader={({ section }) => (
           <View style={styles.groupHeader}>
-            {section.title === 'Pinned' ? <Ionicons name="pin" size={12} color={t.text2} /> : null}
-            <Text style={[styles.groupLabel, { color: t.text2 }]}>{section.title}</Text>
+            {section.title === 'Pinned' ? <Ionicons name="pin" size={12} color={t.accentText} /> : null}
+            <Text style={[styles.groupLabel, { color: t.text3 }]} accessibilityRole="header">
+              {section.title}
+            </Text>
           </View>
         )}
         renderItem={({ item }) => <NoteRow note={item} showFolder={showFolder} t={t} onPress={() => openNote(item.id)} onLongPress={() => setMenuNote(item)} />}
-        ListEmptyComponent={<Text style={[styles.empty, { color: t.text3 }]}>{deleted ? 'No Recently Deleted Notes' : search ? 'No Results' : 'No Notes'}</Text>}
+        ListEmptyComponent={
+          <View style={styles.empty} accessibilityRole="text">
+            <Ionicons name={deleted ? 'trash-outline' : search ? 'search' : 'create-outline'} size={30} color={t.textFaint} />
+            <Text style={[styles.emptyTitle, { color: t.text2 }]}>{deleted ? 'Nothing here' : search ? 'No results' : 'No notes yet'}</Text>
+            <Text style={[styles.emptyText, { color: t.text3 }]}>
+              {deleted ? `Deleted notes wait here for ${TRASH_DAYS} days.` : search ? `Nothing matches “${search.trim()}”.` : 'Tap the pencil to write one.'}
+            </Text>
+          </View>
+        }
       />
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 8, borderTopColor: t.sep, backgroundColor: t.bg }]}>
         <View style={{ width: 42 }} />
@@ -159,7 +177,7 @@ export function NotesScreen({ navigation }: ScreenProps<'Notes'>) {
         {deleted ? (
           <View style={{ width: 42 }} />
         ) : (
-          <Pressable onPress={compose} hitSlop={8} style={{ padding: 8 }}>
+          <Pressable onPress={compose} hitSlop={8} style={{ padding: 8 }} accessibilityRole="button" accessibilityLabel="New Note">
             <Ionicons name="create-outline" size={26} color={t.accentText} />
           </Pressable>
         )}
@@ -176,13 +194,15 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: 16, marginBottom: 6, borderRadius: 10, paddingHorizontal: 10, height: 36 },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 0 },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 },
-  groupLabel: { fontSize: 13, fontWeight: '600' },
+  groupLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   row: { paddingHorizontal: 20, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   title: { fontSize: 16, fontWeight: '600' },
   meta: { flexDirection: 'row', gap: 8, marginTop: 2 },
   date: { fontSize: 14 },
   snippet: { fontSize: 14, flex: 1 },
   folder: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  empty: { textAlign: 'center', marginTop: 60, fontSize: 15 },
+  empty: { alignItems: 'center', gap: 8, marginTop: 72, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 16, fontWeight: '600' },
+  emptyText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 6, borderTopWidth: StyleSheet.hairlineWidth }
 })

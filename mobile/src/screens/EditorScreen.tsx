@@ -43,7 +43,13 @@ function hlColor(t: Theme, c: HighlightColor): string {
 
 function ToolButton({ t, active, disabled, onPress, children, label }: { t: Theme; active?: boolean; disabled?: boolean; onPress: () => void; children: React.ReactNode; label: string }) {
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityLabel={label} style={[styles.tool, active && { backgroundColor: t.accentSoft }, disabled && { opacity: 0.35 }]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled, selected: !!active }}
+      style={[styles.tool, active && { backgroundColor: t.accentSoft }, disabled && { opacity: 0.35 }]}>
       {children}
     </Pressable>
   )
@@ -53,12 +59,18 @@ function ToolButton({ t, active, disabled, onPress, children, label }: { t: Them
 function FormatSheet({ visible, st, t, onClose, cmd }: { visible: boolean; st: EditorState; t: Theme; onClose: () => void; cmd: (name: string, arg?: unknown) => void }) {
   const insets = useSafeAreaInsets()
   const mark = (name: 'bold' | 'italic' | 'underline' | 'strike', glyph: string, style: object): React.ReactNode => (
-    <Pressable key={name} onPress={() => cmd(name)} style={[styles.markBtn, { backgroundColor: st[name] ? t.accentSoft : t.field }]}>
+    <Pressable
+      key={name}
+      onPress={() => cmd(name)}
+      accessibilityRole="button"
+      accessibilityLabel={name === 'strike' ? 'strikethrough' : name}
+      accessibilityState={{ selected: !!st[name] }}
+      style={[styles.markBtn, { backgroundColor: st[name] ? t.accentSoft : t.field }]}>
       <Text style={[{ fontSize: 18, color: t.text }, style]}>{glyph}</Text>
     </Pressable>
   )
   const row = (label: string, on: boolean, onPress: () => void, marker?: string): React.ReactNode => (
-    <Pressable key={label} onPress={onPress} android_ripple={{ color: t.ripple }} style={styles.formatRow}>
+    <Pressable key={label} onPress={onPress} android_ripple={{ color: t.ripple }} style={styles.formatRow} accessibilityRole="button" accessibilityState={{ selected: on }}>
       <View style={{ width: 26 }}>{on ? <Ionicons name="checkmark" size={18} color={t.accentText} /> : null}</View>
       {marker ? <Text style={{ width: 22, color: t.text2, fontSize: 16 }}>{marker}</Text> : null}
       <Text style={{ fontSize: 17, color: t.text }}>{label}</Text>
@@ -76,9 +88,15 @@ function FormatSheet({ visible, st, t, onClose, cmd }: { visible: boolean; st: E
           </View>
           <View style={styles.swatches}>
             {HIGHLIGHT_COLORS.map((c) => (
-              <Pressable key={c} onPress={() => cmd('highlight', st.highlight === c ? null : c)} style={[styles.swatch, { backgroundColor: hlColor(t, c) }, st.highlight === c && { borderColor: t.text, borderWidth: 2 }]} />
+              <Pressable
+                key={c}
+                onPress={() => cmd('highlight', st.highlight === c ? null : c)}
+                accessibilityRole="button"
+                accessibilityLabel={`Highlight ${c}`}
+                accessibilityState={{ selected: st.highlight === c }}
+                style={[styles.swatch, { backgroundColor: hlColor(t, c) }, st.highlight === c && { borderColor: t.text, borderWidth: 2 }]} />
             ))}
-            <Pressable onPress={() => cmd('highlight', null)} style={[styles.swatch, { backgroundColor: t.field }]}>
+            <Pressable onPress={() => cmd('highlight', null)} style={[styles.swatch, { backgroundColor: t.field }]} accessibilityRole="button" accessibilityLabel="Remove highlight">
               <Ionicons name="close" size={14} color={t.text2} />
             </Pressable>
           </View>
@@ -270,7 +288,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
           <>
             {note && !deleted ? <BarButton icon={note.pinned ? 'pin' : 'pin-outline'} active={note.pinned} label={note.pinned ? 'Unpin' : 'Pin'} onPress={() => useStore.getState().togglePin(note.id)} /> : null}
             {note && deleted ? (
-              <Pressable onPress={() => useStore.getState().recoverNote(note.id)} style={{ paddingHorizontal: 10 }}>
+              <Pressable onPress={() => useStore.getState().recoverNote(note.id)} style={{ paddingHorizontal: 10 }} accessibilityRole="button">
                 <Text style={{ color: t.accentText, fontSize: 17 }}>Recover</Text>
               </Pressable>
             ) : null}
@@ -344,7 +362,7 @@ export function EditorScreen({ navigation }: ScreenProps<'Editor'>) {
               <Ionicons name="arrow-redo-outline" size={21} color={t.text} />
             </ToolButton>
           </ScrollView>
-          <Pressable onPress={done} style={styles.done}>
+          <Pressable onPress={done} style={styles.done} accessibilityRole="button" accessibilityLabel="Done editing">
             <Text style={{ color: t.accentText, fontSize: 16, fontWeight: '600' }}>Done</Text>
           </Pressable>
         </View>

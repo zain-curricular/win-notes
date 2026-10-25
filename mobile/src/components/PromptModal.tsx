@@ -33,9 +33,11 @@ export function PromptModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessible={false} importantForAccessibility="no" />
         <View style={[styles.card, { backgroundColor: t.sheet }]}>
-          <Text style={[styles.title, { color: t.text }]}>{title}</Text>
+          <Text style={[styles.title, { color: t.text }]} accessibilityRole="header">
+            {title}
+          </Text>
           <TextInput
             autoFocus
             value={value}
@@ -43,16 +45,17 @@ export function PromptModal({
             placeholder={placeholder}
             placeholderTextColor={t.text3}
             selectTextOnFocus
+            accessibilityLabel={title}
             maxLength={200}
             returnKeyType="done"
             onSubmitEditing={submit}
             style={[styles.input, { backgroundColor: t.field, color: t.text }]}
           />
           <View style={styles.buttons}>
-            <Pressable onPress={onClose} style={styles.btn}>
+            <Pressable onPress={onClose} style={styles.btn} accessibilityRole="button">
               <Text style={[styles.btnText, { color: t.accentText }]}>Cancel</Text>
             </Pressable>
-            <Pressable onPress={submit} style={styles.btn} disabled={!value.trim()}>
+            <Pressable onPress={submit} style={styles.btn} disabled={!value.trim()} accessibilityRole="button" accessibilityState={{ disabled: !value.trim() }}>
               <Text style={[styles.btnText, { color: t.accentText, fontWeight: '600', opacity: value.trim() ? 1 : 0.4 }]}>{submitLabel}</Text>
             </Pressable>
           </View>

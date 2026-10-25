@@ -23,7 +23,7 @@ export function TopBar({
     <View style={{ paddingTop: insets.top, backgroundColor: 'transparent' }}>
       <View style={styles.bar}>
         {onBack ? (
-          <Pressable onPress={onBack} hitSlop={10} style={styles.back}>
+          <Pressable onPress={onBack} hitSlop={10} style={styles.back} accessibilityRole="button" accessibilityLabel={`Back to ${backLabel ?? 'the previous screen'}`}>
             <Ionicons name="chevron-back" size={26} color={t.accentText} />
             <Text style={[styles.backText, { color: t.accentText }]} numberOfLines={1}>
               {backLabel ?? 'Back'}
@@ -33,7 +33,7 @@ export function TopBar({
           <View style={styles.back} />
         )}
         {!large ? (
-          <Text style={[styles.title, { color: t.text }]} numberOfLines={1}>
+          <Text style={[styles.title, { color: t.text }]} numberOfLines={1} accessibilityRole="header">
             {title}
           </Text>
         ) : (
@@ -41,7 +41,11 @@ export function TopBar({
         )}
         <View style={styles.right}>{right}</View>
       </View>
-      {large ? <Text style={[styles.large, { color: t.text }]}>{title}</Text> : null}
+      {large ? (
+        <Text style={[styles.large, { color: t.text }]} accessibilityRole="header">
+          {title}
+        </Text>
+      ) : null}
     </View>
   )
 }
@@ -49,7 +53,15 @@ export function TopBar({
 export function BarButton({ icon, onPress, active, disabled, label }: { icon: keyof typeof Ionicons.glyphMap; onPress: () => void; active?: boolean; disabled?: boolean; label?: string }) {
   const t = useTheme()
   return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={8} accessibilityLabel={label} style={[styles.btn, disabled && { opacity: 0.35 }]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled, selected: !!active }}
+      style={[styles.btn, disabled && { opacity: 0.35 }]}
+    >
       <Ionicons name={icon} size={23} color={active ? t.accent : t.accentText} />
     </Pressable>
   )

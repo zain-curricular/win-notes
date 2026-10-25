@@ -12,8 +12,8 @@ export function ActionSheet({ visible, title, items, onClose }: { visible: boole
   const insets = useSafeAreaInsets()
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: t.sheet, marginBottom: insets.bottom + 10 }]} onPress={() => {}}>
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close menu">
+        <Pressable style={[styles.sheet, { backgroundColor: t.sheet, marginBottom: insets.bottom + 10 }]} onPress={() => {}} accessible={false}>
           {title ? (
             <Text style={[styles.title, { color: t.text2 }]} numberOfLines={1}>
               {title}
@@ -27,6 +27,9 @@ export function ActionSheet({ visible, title, items, onClose }: { visible: boole
                 <Pressable
                   key={i}
                   disabled={item.disabled}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ disabled: !!item.disabled, checked: item.checked }}
                   android_ripple={{ color: t.ripple }}
                   style={[styles.row, item.disabled && { opacity: 0.4 }]}
                   onPress={() => {

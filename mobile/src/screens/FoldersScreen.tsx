@@ -19,7 +19,15 @@ const STATUS_LABEL: Record<SyncStatus, string> = {
 
 function Row({ icon, label, count, onPress, onLongPress, t, last }: { icon: keyof typeof Ionicons.glyphMap; label: string; count: number; onPress: () => void; onLongPress?: () => void; t: Theme; last?: boolean }) {
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} android_ripple={{ color: t.ripple }} style={styles.row}>
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      android_ripple={{ color: t.ripple }}
+      style={styles.row}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${count} ${count === 1 ? 'note' : 'notes'}`}
+      accessibilityHint={onLongPress ? 'Touch and hold to rename or delete' : undefined}
+    >
       <Ionicons name={icon} size={22} color={t.accentText} style={{ width: 34 }} />
       <View style={[styles.rowBody, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.sep }]}>
         <Text style={[styles.rowLabel, { color: t.text }]} numberOfLines={1}>
@@ -71,7 +79,9 @@ export function FoldersScreen({ navigation, email, onSignOut, onSignIn }: Screen
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
       <TopBar title="Folders" large right={<BarButton icon="person-circle-outline" label="Account" onPress={() => setAccountOpen(true)} />} />
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <Text style={[styles.section, { color: t.text2 }]}>{email ?? 'On This Phone'}</Text>
+        <Text style={[styles.section, { color: t.text3 }]} accessibilityRole="header">
+          {email ?? 'On This Phone'}
+        </Text>
         <View style={[styles.group, { backgroundColor: t.card }]}>
           <Row t={t} icon="albums-outline" label="All Notes" count={count('all')} onPress={() => open('all')} />
           <Row t={t} icon="folder-outline" label="Notes" count={count('notes')} onPress={() => open('notes')} last={sorted.length === 0} />
@@ -86,14 +96,14 @@ export function FoldersScreen({ navigation, email, onSignOut, onSignIn }: Screen
       </ScrollView>
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 8, borderTopColor: t.sep, backgroundColor: t.grouped }]}>
-        <Pressable onPress={() => setNewFolder(true)} hitSlop={8} style={styles.bottomBtn}>
+        <Pressable onPress={() => setNewFolder(true)} hitSlop={8} style={styles.bottomBtn} accessibilityRole="button" accessibilityLabel="New Folder">
           <Ionicons name="folder-open-outline" size={24} color={t.accentText} />
         </Pressable>
         <View style={styles.status}>
-          <View style={[styles.dot, { backgroundColor: syncStatus === 'synced' ? '#34c759' : syncStatus === 'offline' ? t.danger : syncStatus === 'local' ? t.text3 : t.accent }]} />
+          <View style={[styles.dot, { backgroundColor: syncStatus === 'synced' ? t.success : syncStatus === 'offline' ? t.danger : syncStatus === 'local' ? t.text3 : t.accent }]} />
           <Text style={{ color: t.text2, fontSize: 12 }}>{STATUS_LABEL[syncStatus]}</Text>
         </View>
-        <Pressable onPress={compose} hitSlop={8} style={styles.bottomBtn}>
+        <Pressable onPress={compose} hitSlop={8} style={styles.bottomBtn} accessibilityRole="button" accessibilityLabel="New Note">
           <Ionicons name="create-outline" size={26} color={t.accentText} />
         </Pressable>
       </View>
@@ -107,7 +117,7 @@ export function FoldersScreen({ navigation, email, onSignOut, onSignIn }: Screen
 }
 
 const styles = StyleSheet.create({
-  section: { fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3, marginLeft: 32, marginTop: 10, marginBottom: 6 },
+  section: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: 32, marginTop: 12, marginBottom: 8 },
   group: { marginHorizontal: 16, borderRadius: 12, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', paddingLeft: 14 },
   rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingVertical: 13, paddingRight: 12 },

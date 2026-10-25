@@ -82,9 +82,23 @@ export function AuthScreen({ notice, onOffline }: { notice: string | null; onOff
               returnKeyType="go"
             />
             {mode === 'signup' && error !== SIGN_UP_PASSWORD_RULE ? <Text style={[styles.msg, { color: t.text3 }]}>{SIGN_UP_PASSWORD_RULE}</Text> : null}
-            {error ? <Text style={[styles.msg, { color: t.danger }]}>{error}</Text> : null}
-            {info ? <Text style={[styles.msg, { color: t.text2 }]}>{info}</Text> : null}
-            <Pressable onPress={submit} disabled={busy || !email || password.length < 6} style={({ pressed }) => [styles.primary, { backgroundColor: t.accent, opacity: pressed ? 0.85 : busy || !email || password.length < 6 ? 0.5 : 1 }]}>
+            {error ? (
+              <Text style={[styles.msg, { color: t.danger }]} accessibilityRole="alert" accessibilityLiveRegion="assertive">
+                {error}
+              </Text>
+            ) : null}
+            {info ? (
+              <Text style={[styles.msg, { color: t.text2 }]} accessibilityLiveRegion="polite">
+                {info}
+              </Text>
+            ) : null}
+            <Pressable
+              onPress={submit}
+              disabled={busy || !email || password.length < 6}
+              accessibilityRole="button"
+              accessibilityLabel={mode === 'signin' ? 'Sign In' : 'Create Account'}
+              accessibilityState={{ disabled: busy || !email || password.length < 6, busy }}
+              style={({ pressed }) => [styles.primary, { backgroundColor: t.accent, opacity: pressed ? 0.85 : busy || !email || password.length < 6 ? 0.5 : 1 }]}>
               {busy ? <ActivityIndicator color="#1d1d1f" /> : <Text style={styles.primaryText}>{mode === 'signin' ? 'Sign In' : 'Create Account'}</Text>}
             </Pressable>
             <Pressable
@@ -93,6 +107,7 @@ export function AuthScreen({ notice, onOffline }: { notice: string | null; onOff
                 setError(null)
               }}
               style={styles.link}
+              accessibilityRole="button"
             >
               <Text style={{ color: t.accentText, fontSize: 15 }}>{mode === 'signin' ? "Don't have an account? Create one" : 'Already have an account? Sign in'}</Text>
             </Pressable>
@@ -100,7 +115,7 @@ export function AuthScreen({ notice, onOffline }: { notice: string | null; onOff
         ) : (
           <Text style={[styles.msg, { color: t.danger }]}>Cloud sync is not configured in this build.</Text>
         )}
-        <Pressable onPress={onOffline} style={styles.link}>
+        <Pressable onPress={onOffline} style={styles.link} accessibilityRole="button">
           <Text style={{ color: t.text2, fontSize: 15 }}>Use without syncing</Text>
         </Pressable>
       </ScrollView>

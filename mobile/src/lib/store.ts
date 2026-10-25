@@ -83,7 +83,7 @@ type State = Persisted & {
 }
 
 export const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'heading', attrs: { level: 1 } }] }
-const TRASH_DAYS = 30
+export const TRASH_DAYS = 30
 
 const nowIso = (): string => new Date().toISOString()
 export const uuid = (): string => randomUUID()
