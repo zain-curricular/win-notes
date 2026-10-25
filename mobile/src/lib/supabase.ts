@@ -1,8 +1,14 @@
 import 'react-native-url-polyfill/auto'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants from 'expo-constants'
+import { getRandomValues } from 'expo-crypto'
 import { AppState } from 'react-native'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { secureSessionStorage } from './secureSession'
+
+// Hermes has no Web Crypto, and without crypto.getRandomValues supabase-js makes the PKCE verifier with Math.random.
+if (typeof globalThis.crypto?.getRandomValues !== 'function') {
+  globalThis.crypto = { ...globalThis.crypto, getRandomValues } as Crypto
+}
 
 const extra = (Constants.expoConfig?.extra ?? {}) as { supabaseUrl?: string; supabaseKey?: string }
 const url = extra.supabaseUrl
@@ -13,7 +19,7 @@ export const supabase: SupabaseClient | null =
   url && key
     ? createClient(url, key, {
         // PKCE: a confirmation link only works on the device that signed up (see lib/authLink.ts).
-        auth: { storage: AsyncStorage, flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+        auth: { storage: secureSessionStorage(), flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
         realtime: { params: { eventsPerSecond: 20 } }
       })
     : null
