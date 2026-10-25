@@ -132,7 +132,7 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
             ['strikethrough', <Strikethrough key="s" size={15} />, () => editor.chain().focus().toggleStrike().run(), st.strike]
           ] as const
         ).map(([name, icon, run, on]) => (
-          <button key={name} className={on ? 'on' : ''} title={name} onMouseDown={(e) => e.preventDefault()} onClick={run}>
+          <button key={name} className={on ? 'on' : ''} title={name} aria-label={name} aria-pressed={on} onMouseDown={(e) => e.preventDefault()} onClick={run}>
             {icon}
           </button>
         ))}
@@ -144,6 +144,7 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
             className={st.align === a.align ? 'on' : ''}
             title={a.shortcut ? `${a.label} (${shortcuts.label(a.shortcut)})` : a.label}
             aria-label={a.label}
+            aria-pressed={st.align === a.align}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setAlign(editor, a.align)}
           >
@@ -157,11 +158,13 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
             key={c}
             className={`swatch swatch-${c}${st.highlight === c ? ' on' : ''}`}
             title={`Highlight ${c}`}
+            aria-label={`Highlight ${c}`}
+            aria-pressed={st.highlight === c}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setHighlight(editor, st.highlight === c ? null : c)}
           />
         ))}
-        <button className="swatch swatch-none" title="Remove highlight" onMouseDown={(e) => e.preventDefault()} onClick={() => setHighlight(editor, null)}>
+        <button className="swatch swatch-none" title="Remove highlight" aria-label="Remove highlight" onMouseDown={(e) => e.preventDefault()} onClick={() => setHighlight(editor, null)}>
           <X size={11} />
         </button>
       </div>
@@ -170,10 +173,11 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
         <button
           key={s.style}
           className={`format-style style-${s.style}${st.style === s.style && !st.list ? ' on' : ''}`}
+          aria-pressed={st.style === s.style && !st.list}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => (setStyle(editor, s.style), onClose())}
         >
-          <span className="format-check">{st.style === s.style && !st.list ? '✓' : ''}</span>
+          <span className="format-check" aria-hidden>{st.style === s.style && !st.list ? '✓' : ''}</span>
           <span className="format-label">{s.label}</span>
           <span className="menu-shortcut">{shortcuts.label(s.shortcut)}</span>
         </button>
@@ -183,12 +187,13 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
         <button
           key={l.kind}
           className={`format-style${st.list === l.kind ? ' on' : ''}`}
+          aria-pressed={st.list === l.kind}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => (toggleList(editor, l.kind), onClose())}
         >
-          <span className="format-check">{st.list === l.kind ? '✓' : ''}</span>
+          <span className="format-check" aria-hidden>{st.list === l.kind ? '✓' : ''}</span>
           <span className="format-label">
-            <span className="list-marker">{l.marker}</span>
+            <span className="list-marker" aria-hidden>{l.marker}</span>
             {l.label}
           </span>
           <span className="menu-shortcut">{shortcuts.label(l.shortcut)}</span>
@@ -196,12 +201,13 @@ function FormatMenu({ editor, onClose }: { editor: TiptapEditor; onClose: () => 
       ))}
       <button
         className={`format-style${st.quote ? ' on' : ''}`}
+        aria-pressed={st.quote}
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => (editor.chain().focus().toggleBlockquote().run(), onClose())}
       >
-        <span className="format-check">{st.quote ? '✓' : ''}</span>
+        <span className="format-check" aria-hidden>{st.quote ? '✓' : ''}</span>
         <span className="format-label">
-          <span className="list-marker quote-marker">|</span>Block Quote
+          <span className="list-marker quote-marker" aria-hidden>|</span>Block Quote
         </span>
         <span className="menu-shortcut">{shortcuts.label('blockQuote')}</span>
       </button>
@@ -474,7 +480,11 @@ function NoteEditor({ note, onEditor }: { note: Note; onEditor: (e: TiptapEditor
         ])
       }}
     >
-      {deleted ? <div className="deleted-banner">This note is in Recently Deleted. Recover it to edit.</div> : null}
+      {deleted ? (
+        <div className="deleted-banner" role="status">
+          This note is in Recently Deleted. Recover it to edit.
+        </div>
+      ) : null}
       <div className="note-date-line">{fullDate(note.updated_at)}</div>
       <EditorContent editor={editor} />
     </motion.div>

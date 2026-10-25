@@ -65,10 +65,11 @@ export function AuthScreen({ onOffline, notice }: { onOffline: () => void; notic
 
         {supabase ? (
           <form onSubmit={submit} className="auth-form">
-            <input type="email" placeholder="Email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+            <input type="email" placeholder="Email" aria-label="Email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
             <input
               type="password"
               placeholder="Password"
+              aria-label="Password"
               aria-describedby={showRule ? 'password-rule' : undefined}
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               value={password}
@@ -82,12 +83,12 @@ export function AuthScreen({ onOffline, notice }: { onOffline: () => void; notic
             ) : null}
             <AnimatePresence mode="popLayout">
               {error ? (
-                <motion.div key="err" className="auth-error" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <motion.div key="err" className="auth-error" role="alert" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                   {error}
                 </motion.div>
               ) : null}
               {info ? (
-                <motion.div key="info" className="auth-info" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <motion.div key="info" className="auth-info" role="status" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                   {info}
                 </motion.div>
               ) : null}

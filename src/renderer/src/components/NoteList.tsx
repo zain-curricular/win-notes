@@ -93,11 +93,13 @@ function NoteRow({ note, showFolder }: { note: Note; showFolder: boolean }): Rea
       <div className="note-title">{note.title || 'New Note'}</div>
       <div className="note-meta">
         <span className="note-date">{rowDate(note.updated_at)}</span>
+        <span className="visually-hidden">, </span>
         <span className="note-snippet">{note.snippet || 'No additional text'}</span>
       </div>
       {showFolder ? (
         <div className="note-folder">
-          <Folder size={12} />
+          <Folder size={12} aria-hidden />
+          <span className="visually-hidden">in </span>
           {folderName}
         </div>
       ) : null}
@@ -174,11 +176,23 @@ export function ListHeader({ withToggle, gallery }: { withToggle?: boolean; gall
           </div>
         )}
       </div>
-      <div className="segmented">
-        <button className={layout === 'list' ? 'on' : ''} title={`List (${shortcuts.label('listLayout')})`} onClick={() => setLayout('list')}>
+      <div className="segmented" role="group" aria-label="Layout">
+        <button
+          className={layout === 'list' ? 'on' : ''}
+          title={`List (${shortcuts.label('listLayout')})`}
+          aria-label="List"
+          aria-pressed={layout === 'list'}
+          onClick={() => setLayout('list')}
+        >
           <List size={15} />
         </button>
-        <button className={layout === 'gallery' ? 'on' : ''} title={`Gallery (${shortcuts.label('galleryLayout')})`} onClick={() => setLayout('gallery')}>
+        <button
+          className={layout === 'gallery' ? 'on' : ''}
+          title={`Gallery (${shortcuts.label('galleryLayout')})`}
+          aria-label="Gallery"
+          aria-pressed={layout === 'gallery'}
+          onClick={() => setLayout('gallery')}
+        >
           <LayoutGrid size={15} />
         </button>
       </div>
@@ -224,8 +238,8 @@ export function NoteList(): ReactNode {
         {notes.length === 0 ? <EmptyList view={state.view} search={state.search} /> : null}
         <AnimatePresence initial={false}>
           {groups.flatMap((g) => [
-            <motion.div key={`h-${g.label}`} layout="position" className="group-label" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {g.label === 'Pinned' ? <Pin size={12} className="pin-ico" /> : null}
+            <motion.div key={`h-${g.label}`} layout="position" className="group-label" role="presentation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {g.label === 'Pinned' ? <Pin size={12} className="pin-ico" aria-hidden /> : null}
               {g.label}
             </motion.div>,
             ...g.notes.map((n) => <NoteRow key={n.id} note={n} showFolder={showFolder} />)
