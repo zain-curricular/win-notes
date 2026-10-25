@@ -23,6 +23,32 @@ contextBridge.exposeInMainWorld('windowZoom', {
   }
 })
 
+const vaultCall =
+  (channel: string) =>
+  (...args: unknown[]): Promise<unknown> =>
+    ipcRenderer.invoke(`vault:${channel}`, ...args)
+
+// The key and all cryptography stay in the main process; the page only ever sees what it asks for while unlocked.
+contextBridge.exposeInMainWorld('vault', {
+  status: vaultCall('status'),
+  create: vaultCall('create'),
+  unlock: vaultCall('unlock'),
+  lock: vaultCall('lock'),
+  list: vaultCall('list'),
+  reveal: vaultCall('reveal'),
+  save: vaultCall('save'),
+  remove: vaultCall('remove'),
+  copy: vaultCall('copy'),
+  changePassword: vaultCall('change-password'),
+  touch: vaultCall('touch'),
+  /** The vault locked itself (inactivity, sleep, screen lock); anything shown must go. */
+  onLocked: (cb: () => void): (() => void) => {
+    const listener = (): void => cb()
+    ipcRenderer.on('vault-locked', listener)
+    return () => ipcRenderer.removeListener('vault-locked', listener)
+  }
+})
+
 contextBridge.exposeInMainWorld('updates', {
   /** The newer release on GitHub, if there is one. */
   check: (): Promise<{ version: string; url: string } | null> => ipcRenderer.invoke('check-update')

@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Menu, ipcMain, nativeTheme, net, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, Menu, ipcMain, nativeTheme, net, powerMonitor, session, shell } from 'electron'
 import { release } from 'os'
 import { join, resolve } from 'path'
 import { isNewer } from './version'
+import { result, VaultService, type EntryInput } from './vaultService'
 
 const isMac = process.platform === 'darwin'
 const isWin = process.platform === 'win32'
@@ -97,6 +98,7 @@ function createWindow(): void {
   })
 
   win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown') vault?.touch()
     if (input.type === 'keyDown' && input.key === 'F12') win.webContents.toggleDevTools()
   })
 
@@ -107,6 +109,7 @@ function createWindow(): void {
   }
   win.on('closed', () => {
     mainWindow = null
+    vault?.lock()
   })
 }
 
@@ -168,6 +171,31 @@ ipcMain.on('set-zoom', (event, factor: unknown) => {
   if (isMac) win.setWindowButtonPosition(trafficLightPosition())
 })
 
+let vault: VaultService | null = null
+
+// Only the app's own page may reach the vault: not a navigated frame, not another window.
+const fromApp = (event: Electron.IpcMainInvokeEvent): boolean =>
+  !!mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame
+
+function handleVault<A extends unknown[], T>(channel: string, call: (v: VaultService, ...args: A) => T | Promise<T>): void {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!vault || !fromApp(event)) return { ok: false, code: 'refused' }
+    return result(() => call(vault!, ...(args as A)))
+  })
+}
+
+handleVault('vault:status', (v, accountId: string) => v.status(accountId))
+handleVault('vault:create', (v, accountId: string, password: string) => v.create(accountId, password))
+handleVault('vault:unlock', (v, accountId: string, password: string) => v.unlock(accountId, password))
+handleVault('vault:lock', (v) => v.lock())
+handleVault('vault:list', (v) => v.list())
+handleVault('vault:reveal', (v, id: string) => v.reveal(id))
+handleVault('vault:save', (v, entry: EntryInput) => v.save(entry))
+handleVault('vault:remove', (v, id: string) => v.remove(id))
+handleVault('vault:copy', (v, id: string) => v.copyPassword(id))
+handleVault('vault:change-password', (v, current: string, next: string) => v.changePassword(current, next))
+handleVault('vault:touch', (v) => v.touch())
+
 ipcMain.on('app-info', (event) => {
   event.returnValue = {
     platform: process.platform,
@@ -195,6 +223,9 @@ if (!app.requestSingleInstanceLock()) {
     const allowed = (permission: string): boolean => CLIPBOARD.has(permission)
     session.defaultSession.setPermissionRequestHandler((_contents, permission, callback) => callback(allowed(permission)))
     session.defaultSession.setPermissionCheckHandler((_contents, permission) => allowed(permission))
+    vault = new VaultService({ dir: app.getPath('userData'), clipboard, onLock: () => mainWindow?.webContents.send('vault-locked') })
+    powerMonitor.on('lock-screen', () => vault?.lock())
+    powerMonitor.on('suspend', () => vault?.lock())
     buildMenu()
     createWindow()
     nativeTheme.on('updated', () => {
@@ -208,4 +239,5 @@ if (!app.requestSingleInstanceLock()) {
   app.on('window-all-closed', () => {
     if (!isMac) app.quit()
   })
+  app.on('before-quit', () => vault?.lock())
 }

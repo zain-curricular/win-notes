@@ -22,4 +22,20 @@ interface Window {
     set: (factor: number) => void
     onMenu: (cb: (direction: 1 | -1 | 0) => void) => () => void
   }
+  vault?: {
+    status: (accountId: string) => Promise<VaultResult<import('../../main/vaultService').VaultStatus>>
+    create: (accountId: string, password: string) => Promise<VaultResult<void>>
+    unlock: (accountId: string, password: string) => Promise<VaultResult<void>>
+    lock: () => Promise<VaultResult<void>>
+    list: () => Promise<VaultResult<import('../../main/vaultService').EntrySummary[]>>
+    reveal: (id: string) => Promise<VaultResult<import('../../main/vault').VaultEntry>>
+    save: (entry: import('../../main/vaultService').EntryInput) => Promise<VaultResult<import('../../main/vaultService').EntrySummary[]>>
+    remove: (id: string) => Promise<VaultResult<import('../../main/vaultService').EntrySummary[]>>
+    copy: (id: string) => Promise<VaultResult<void>>
+    changePassword: (current: string, next: string) => Promise<VaultResult<void>>
+    touch: () => Promise<VaultResult<void>>
+    onLocked: (cb: () => void) => () => void
+  }
 }
+
+type VaultResult<T> = import('../../main/vaultService').VaultResult<T> | { ok: false; code: 'refused' }
