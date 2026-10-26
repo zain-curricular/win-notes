@@ -21,7 +21,7 @@
     "dist:android": "node scripts/build-android.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.3",
+    "@supabase/supabase-js": "^2.118.0",
     "@tiptap/extension-highlight": "^3.32.0",
     "@tiptap/extension-list": "^3.32.0",
     "@tiptap/extension-table": "^3.32.0",
@@ -31,11 +31,11 @@
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
     "electron-updater": "6.8.10",
-    "lucide-react": "^1.56.0",
+    "lucide-react": "^1.59.0",
     "marked": "^18.1.1",
-    "motion": "^14.2.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "motion": "^14.4.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -44,12 +44,12 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^44.9.1",
-    "electron-builder": "^26.15.3",
+    "electron-builder": "^26.17.0",
     "electron-vite": "^5.0.0",
     "typescript": "^7.0.2",
     "vite": "^7.3.7",
-    "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^5.0.3"
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.0.5"
   },
   "productName": "Notes",
   "build": {
