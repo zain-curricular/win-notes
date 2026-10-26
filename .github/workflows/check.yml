@@ -53,3 +53,29 @@ jobs:
         run: xvfb-run -a npm run test:e2e
       - if: runner.os != 'Linux'
         run: npm run test:e2e
+
+  update:
+    # A real install of this version updates itself in place to the next one, served from a local feed.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run dist:win
+      - name: Install this version
+        shell: pwsh
+        run: |
+          Start-Process (Get-Item release\Notes-Setup-*.exe).FullName -ArgumentList '/S' -Wait
+          Remove-Item release -Recurse
+      - run: npm version patch --no-git-tag-version
+      - run: npm run dist:win
+      - name: Update the installed copy
+        shell: pwsh
+        run: |
+          $env:NOTES_EXE = (Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter Notes.exe | Select-Object -First 1).FullName
+          $env:NOTES_FEED_DIR = "$PWD\release"
+          $env:NOTES_NEXT_VERSION = node -p "require('./package.json').version"
+          node --test e2e/installed-update.mjs
