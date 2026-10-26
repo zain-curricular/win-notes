@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Notes',
     slug: 'win-notes',
-    version: '0.3.1',
+    version: '0.3.2',
     scheme: 'winnotes',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -35,7 +35,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // Not com.winnotes.app: that app was signed with Expo's public debug key, and a new name lets it be installed
       // beside the old one, so notes can be checked before the old app is removed.
       package: 'com.winnotes.notes',
-      versionCode: 4,
+      versionCode: 5,
       adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#f7e7a8' },
       predictiveBackGestureEnabled: false,
       softwareKeyboardLayoutMode: 'resize',
