@@ -1759,6 +1759,10 @@ button {
   box-shadow: var(--shadow);
   color: var(--text);
 }
+.submenu.submenu-left {
+  left: auto;
+  right: calc(100% + 4px);
+}
 
 /* Format ("Aa") menu */
 .format-menu {

@@ -42,6 +42,16 @@ export type MenuItem =
 export function MenuList({ items, onClose, onBack }: { items: MenuItem[]; onClose: () => void; onBack?: () => void }): ReactNode {
   const [openSub, setOpenSub] = useState<number | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const subRef = useRef<HTMLDivElement>(null)
+  // A submenu that would leave the window opens to the left of its row, and moves up near the bottom edge.
+  const [subPlace, setSubPlace] = useState<{ index: number; left: boolean; raise: number } | null>(null)
+  useLayoutEffect(() => {
+    const el = subRef.current
+    if (openSub === null || !el) return
+    const r = el.getBoundingClientRect()
+    setSubPlace({ index: openSub, left: r.right > window.innerWidth - 8, raise: Math.max(0, r.bottom - (window.innerHeight - 8)) })
+  }, [openSub])
+  const place = subPlace?.index === openSub ? subPlace : null
   const rows = (): HTMLElement[] => [...(ref.current?.querySelectorAll<HTMLElement>(':scope > [role="menuitem"]:not(.disabled)') ?? [])]
   const actionable = items.filter((x): x is Exclude<MenuItem, 'separator'> => x !== 'separator' && !x.disabled)
 
@@ -97,7 +107,15 @@ export function MenuList({ items, onClose, onBack }: { items: MenuItem[]; onClos
             {item.submenu ? <ChevronRight size={13} className="menu-chevron" /> : null}
             <AnimatePresence>
               {item.submenu && openSub === i ? (
-                <motion.div className="submenu" {...pop} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+                <motion.div
+                  ref={subRef}
+                  className={`submenu${place?.left ? ' submenu-left' : ''}`}
+                  style={place?.raise ? { top: -5 - place.raise } : undefined}
+                  {...pop}
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                >
                   <MenuList
                     items={item.submenu}
                     onClose={onClose}
