@@ -18,9 +18,9 @@ function userData() {
   return join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'Notes')
 }
 
-export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}` } = {}) {
+export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}`, env: extra = {} } = {}) {
   const port = 9400 + Math.floor(Math.random() * 500)
-  const env = { ...process.env, NOTES_PROFILE: profile, NOTES_CDP_PORT: String(port) }
+  const env = { ...process.env, ...extra, NOTES_PROFILE: profile, NOTES_CDP_PORT: String(port) }
   delete env.ELECTRON_RUN_AS_NODE
   // Hosted Linux runners and containers have no setuid sandbox helper.
   const args = process.platform === 'linux' ? ['--no-sandbox', root] : [root]
@@ -45,6 +45,7 @@ export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}`
     throw err
   })
   app.profile = profile
+  app.dataDir = join(userData(), `profile-${profile}`)
   app.quit = async () => {
     if (child.exitCode !== null) return app.close()
     const exited = new Promise((r) => child.once('exit', r))
@@ -55,8 +56,25 @@ export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}`
     if (!closed) child.kill()
     await exited
   }
-  app.removeProfile = () => rmSync(join(userData(), `profile-${profile}`), { recursive: true, force: true })
+  app.removeProfile = () => rmSync(app.dataDir, { recursive: true, force: true })
   return app
+}
+
+// Launches past the sign-in screen with the shell ready for keyboard shortcuts.
+export async function start(options) {
+  const app = await launch(options)
+  try {
+    // A build with cloud sync configured opens on the sign-in screen.
+    await app.waitFor(`$('.shell') || byText('button', 'Use without syncing')`, 20000)
+    if (!(await app.js(`return !!$('.shell')`))) await app.click('button', 'Use without syncing')
+    // The shell's keyboard shortcuts are attached once it has faded in, not when it first appears.
+    await app.waitFor(`$('.shell') && getComputedStyle($('.fill')).opacity === '1'`)
+    return app
+  } catch (err) {
+    await app.quit()
+    if (!options?.profile) app.removeProfile()
+    throw err
+  }
 }
 
 async function drive(url) {

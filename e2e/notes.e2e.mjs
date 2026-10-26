@@ -1,25 +1,9 @@
 // End-to-end checks against the built app (npm run build first). Each suite runs in its own throwaway profile.
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
-import { launch, MOD } from './app.mjs'
+import { MOD, start } from './app.mjs'
 
 const stored = (app) => app.js(`return Object.values(JSON.parse(localStorage.getItem('win-notes:local') ?? '{"notes":{}}').notes)`)
-
-async function start(options) {
-  const app = await launch(options)
-  try {
-    // A build with cloud sync configured opens on the sign-in screen.
-    await app.waitFor(`$('.shell') || byText('button', 'Use without syncing')`, 20000)
-    if (!(await app.js(`return !!$('.shell')`))) await app.click('button', 'Use without syncing')
-    // The shell's keyboard shortcuts are attached once it has faded in, not when it first appears.
-    await app.waitFor(`$('.shell') && getComputedStyle($('.fill')).opacity === '1'`)
-    return app
-  } catch (err) {
-    await app.quit()
-    if (!options?.profile) app.removeProfile()
-    throw err
-  }
-}
 
 async function newNote(app, lines) {
   await app.key('n', [MOD])
