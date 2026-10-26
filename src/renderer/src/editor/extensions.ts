@@ -14,7 +14,7 @@ import { foldedRanges } from './folds'
 import { copyLines, LineClipboard } from './lineCopy'
 import { MultiSelect } from './multiSelection'
 import { SelectionMatches } from './selectionHighlight'
-import { shortcuts, shortcutsVersion } from '../lib/shortcuts'
+import { shortcuts, SHORTCUTS, shortcutsVersion, type EditorShortcutId } from '../lib/shortcuts'
 
 /** Lets a bulleted list render with dashes (macOS "Dashed List"). */
 const DashedList = Extension.create({
@@ -134,6 +134,10 @@ const NotesShortcuts = Extension.create({
         () => boolean
       >)
     }
+    // A key TipTap also binds is always taken, or Body on a line that is already Body would fall through to its block quote.
+    const owned = Object.fromEntries(
+      Object.entries(handlers).map(([id, run]) => [id, 'replacesBuiltIn' in SHORTCUTS[id as EditorShortcutId] ? () => (run(), true) : run])
+    ) as typeof handlers
     // Rebuilt only when a shortcut changes, since TipTap's own keyboard shortcuts are fixed once the editor exists.
     let built = -1
     let handle = keydownHandler({})
@@ -142,7 +146,7 @@ const NotesShortcuts = Extension.create({
         props: {
           handleKeyDown(view, event) {
             if (built !== shortcutsVersion()) {
-              handle = keydownHandler(shortcuts.keymap(handlers))
+              handle = keydownHandler(shortcuts.keymap(owned))
               built = shortcutsVersion()
             }
             return handle(view, event)
