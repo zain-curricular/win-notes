@@ -48,13 +48,14 @@ jobs:
         include:
           - os: windows-latest
             script: dist:win
-            files: release/*.exe
+            # latest.yml and the blockmap are what installed copies read to update themselves.
+            files: release/*.exe,release/*.exe.blockmap,release/latest.yml
           - os: macos-latest
             script: dist:mac
             files: release/*.dmg
           - os: ubuntu-latest
             script: dist:linux
-            files: release/*.AppImage,release/*.deb
+            files: release/*.AppImage,release/*.deb,release/latest-linux.yml
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write

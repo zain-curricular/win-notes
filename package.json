@@ -58,6 +58,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "zain-curricular",
+        "repo": "win-notes"
+      }
+    ],
     "files": [
       "out/**/*",
       "package.json"
@@ -83,7 +90,8 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "shortcutName": "Notes"
+      "shortcutName": "Notes",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "mac": {
       "target": [

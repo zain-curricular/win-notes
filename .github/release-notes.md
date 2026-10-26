@@ -1,11 +1,19 @@
 **Install**
 
-- **Windows:** run `Notes.Setup.<version>.exe`. If SmartScreen appears, choose *More info → Run anyway* (the installer is not code-signed yet).
+- **Windows:** run `Notes-Setup-<version>.exe`. If SmartScreen appears, choose *More info → Run anyway* (the installer is not code-signed yet).
 - **Mac:** open the `.dmg` and drag Notes into Applications. If macOS will not open it, use *System Settings → Privacy & Security → Open Anyway* (the app is not notarised yet).
 - **Linux (x64):**
   - On Ubuntu, Debian and Mint, install the `.deb` with `sudo apt install ./win-notes_<version>_amd64.deb`.
   - On any other distribution, run the `.AppImage` with `chmod +x Notes-<version>.AppImage && ./Notes-<version>.AppImage`. Sign-in links from emails open the app only when it is installed from the `.deb`.
 - **Android:** open the `.apk` on the phone and allow installing unknown apps when asked.
+
+**Updates**
+
+From 0.3.2, Notes checks for a new version when it starts and every six hours, and *Check for Updates…* in the account menu (and the Notes menu on Mac) checks straight away.
+
+- **Windows** and the **Linux `.AppImage`** download the update in the background and install it when you click *Restart to Update*.
+- **Mac** and the **Linux `.deb`** download the new installer, check it against `SHA256SUMS`, and open it when you click *Open Installer*.
+- **Android** offers the new `.apk`. It installs over the current app and keeps your notes.
 
 **Moving from the Android app before 0.3.0**
 
