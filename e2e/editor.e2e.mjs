@@ -162,6 +162,7 @@ describe('editing', () => {
     await app.key(',', [MOD])
     await app.waitFor(`document.activeElement?.closest('.shortcut-filter')`)
     await app.typeKeys('lowercase')
+    await app.waitFor(`$$('.shortcut-row').length === 1 && $('.shortcut-row .shortcut-title').textContent === 'lowercase'`)
     await app.click('.shortcut-row button', 'Change')
     await app.waitFor(`$('.shortcut-prompt')`)
     await app.key('y', [MOD, 'Shift'])
