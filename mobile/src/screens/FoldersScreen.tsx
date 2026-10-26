@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { notesInView, useStore, type Folder, type SyncStatus } from '../lib/store'
+import { checkForUpdates } from '../lib/updates'
 import { useTheme, type Theme } from '../theme'
 import { BarButton, TopBar } from '../components/TopBar'
 import { ActionSheet, type SheetItem } from '../components/ActionSheet'
@@ -71,9 +72,14 @@ export function FoldersScreen({ navigation, email, onSignOut, onSignIn }: Screen
         { label: 'Delete Folder', icon: 'trash-outline', danger: true, onPress: () => useStore.getState().deleteFolder(menuFolder.id) }
       ]
     : []
+  const checkUpdates: SheetItem = { label: 'Check for Updates', icon: 'refresh-outline', onPress: () => void checkForUpdates(true) }
   const accountMenu: SheetItem[] = email
-    ? [{ label: 'Sign Out', icon: 'log-out-outline', danger: true, onPress: onSignOut }]
-    : [{ label: 'Sign In to Sync', icon: 'cloud-outline', onPress: onSignIn }]
+    ? [checkUpdates, { label: 'Sign Out', icon: 'log-out-outline', danger: true, onPress: onSignOut }]
+    : [checkUpdates, { label: 'Sign In to Sync', icon: 'cloud-outline', onPress: onSignIn }]
+
+  useEffect(() => {
+    void checkForUpdates(false)
+  }, [])
 
   return (
     <View style={{ flex: 1, backgroundColor: t.grouped }}>
