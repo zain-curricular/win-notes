@@ -18,20 +18,6 @@ function userData() {
   return join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'Notes')
 }
 
-/** The app's window on a DevTools port, once it has opened. */
-export async function connect(port, { tries = 150 } = {}) {
-  let page
-  for (let i = 0; i < tries && !page; i++) {
-    await sleep(200)
-    page = await fetch(`http://127.0.0.1:${port}/json`)
-      .then((r) => r.json())
-      .then((list) => list.find((p) => p.type === 'page'))
-      .catch(() => undefined)
-  }
-  if (!page) throw new Error('the app did not open a window')
-  return drive(page.webSocketDebuggerUrl)
-}
-
 /** Starts the app from this checkout, or an installed copy when `executable` is given. */
 export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}`, env: extra = {}, executable } = {}) {
   const port = 9400 + Math.floor(Math.random() * 500)
@@ -44,11 +30,22 @@ export async function launch({ profile = `e2e-${randomBytes(4).toString('hex')}`
   child.stderr.on('data', (d) => (stderr += d))
   const exited = new Promise((r) => child.once('exit', r))
 
-  const app = await connect(port).catch((err) => {
+  let page
+  for (let i = 0; i < 150 && !page; i++) {
+    await sleep(200)
+    page = await fetch(`http://127.0.0.1:${port}/json`)
+      .then((r) => r.json())
+      .then((list) => list.find((p) => p.type === 'page'))
+      .catch(() => undefined)
+  }
+  if (!page) {
     child.kill()
-    throw new Error(`${err.message}\n${stderr.slice(-2000)}`)
+    throw new Error(`the app did not open a window\n${stderr.slice(-2000)}`)
+  }
+  const app = await drive(page.webSocketDebuggerUrl).catch((err) => {
+    child.kill()
+    throw err
   })
-  app.port = port
   app.exited = exited
   app.profile = profile
   app.dataDir = join(userData(), `profile-${profile}`)

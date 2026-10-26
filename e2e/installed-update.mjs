@@ -1,14 +1,16 @@
-// An installed copy (NOTES_EXE) updates itself in place from a local feed of the next version's release files
-// (NOTES_FEED_DIR), reopens as that version and keeps its notes. The Checks workflow builds both versions first.
+// An installed Windows copy (NOTES_EXE) updates itself in place from a local feed of the next version's release files
+// (NOTES_FEED_DIR), reopens, and starts as that version with its notes. The Checks workflow builds both versions first.
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { createReadStream, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { basename, join } from 'node:path'
 import { after, before, it } from 'node:test'
-import { connect, MOD, start } from './app.mjs'
+import { MOD, start } from './app.mjs'
 
 const { NOTES_EXE: executable, NOTES_FEED_DIR: dir, NOTES_NEXT_VERSION: next } = process.env
 const NOTE = 'Kept through the update'
+const running = () => execFileSync('tasklist', ['/FI', 'IMAGENAME eq Notes.exe', '/NH']).toString().includes('Notes.exe')
 
 let server, feed
 before(async () => {
@@ -40,13 +42,20 @@ it('installs the next version over this one, reopens as it and keeps the notes',
   await app.exited
   app.close()
 
-  // The installer reopens Notes with the environment it was started from, so it comes back on the same port and profile.
-  const updated = await connect(app.port, { tries: 900 })
+  // The installer opens Notes again once the new version is in place.
+  const end = Date.now() + 180000
+  while (!running()) {
+    assert.ok(Date.now() < end, 'Notes did not reopen after the update')
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+  execFileSync('taskkill', ['/IM', 'Notes.exe', '/F'])
+
+  const updated = await start({ executable, profile: app.profile })
   try {
-    await updated.waitFor(`window.appInfo.version === ${JSON.stringify(next)}`)
-    await updated.waitFor(`localStorage.getItem('win-notes:local')?.includes(${JSON.stringify(NOTE)})`, 20000)
+    assert.equal(await updated.js(`return window.appInfo.version`), next)
+    await updated.waitFor(`byText('.note-row .note-title', ${JSON.stringify(NOTE)})`)
   } finally {
-    updated.send('Runtime.evaluate', { expression: 'window.close()' })
-    updated.close()
+    await updated.quit()
+    updated.removeProfile()
   }
 })
