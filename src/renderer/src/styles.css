@@ -495,23 +495,34 @@ button {
 }
 .update-notice {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 4px 6px;
   margin: 0 0 6px;
   padding: 7px 6px 7px 10px;
   border-radius: var(--radius);
   background: var(--accent-soft);
   font-size: 12px;
 }
-.update-notice a {
+.update-notice.update-error {
+  background: var(--hover);
+}
+.update-text {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   color: var(--text);
-  text-decoration: none;
+  overflow-wrap: anywhere;
 }
-.update-notice button {
+.update-text svg {
+  flex: none;
+}
+.update-error .update-text svg {
+  color: var(--danger);
+}
+.update-dismiss {
   display: grid;
   place-items: center;
   width: 22px;
@@ -521,8 +532,35 @@ button {
   background: none;
   color: var(--text-2);
 }
-.update-notice button:hover {
+.update-dismiss:hover {
   background: var(--hover);
+}
+.update-action {
+  order: 1;
+  flex-basis: 100%;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 600;
+}
+.update-action:hover {
+  filter: brightness(0.96);
+}
+.update-progress {
+  order: 1;
+  flex-basis: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.update-progress > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
 }
 
 /* ============ Note list ============ */

@@ -14,6 +14,7 @@ Downloads for every platform: https://zain-curricular.github.io/win-notes/ (or t
 - Every shortcut can be changed in Keyboard Shortcuts (⌘,), saved on each computer
 - Pinning, Recently Deleted (30 days), drag notes onto folders, search with Match Case / Whole Word / Regular Expression, copy/export as Markdown
 - Windows 11 Mica / macOS vibrancy sidebar, light and dark mode
+- Check for Updates in the account menu, and a check at launch: Windows and the AppImage install the new version on restart; the Mac app, the `.deb` and Android download it for you to open
 
 ## Set up the cloud (once)
 

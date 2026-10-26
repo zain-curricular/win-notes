@@ -1,7 +1,7 @@
-import { app, BrowserWindow, clipboard, Menu, ipcMain, nativeTheme, net, powerMonitor, session, shell } from 'electron'
+import { app, BrowserWindow, clipboard, Menu, ipcMain, nativeTheme, powerMonitor, session, shell } from 'electron'
 import { release } from 'os'
 import { join, resolve } from 'path'
-import { isNewer } from './version'
+import { setupUpdates } from './updateService'
 import { result, VaultService, type EntryInput } from './vaultService'
 
 const isMac = process.platform === 'darwin'
@@ -113,7 +113,7 @@ function createWindow(): void {
   })
 }
 
-function buildMenu(): void {
+function buildMenu(checkForUpdates: () => void): void {
   if (!isMac) {
     Menu.setApplicationMenu(null)
     return
@@ -121,7 +121,21 @@ function buildMenu(): void {
   // App shortcuts are handled in the renderer; the menu only provides the standard macOS roles.
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
-      { role: 'appMenu' },
+      {
+        role: 'appMenu',
+        submenu: [
+          { role: 'about' },
+          { label: 'Check for Updates…', click: checkForUpdates },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' }
+        ]
+      },
       { role: 'editMenu' },
       {
         label: 'View',
@@ -145,21 +159,6 @@ ipcMain.handle('take-deep-link', () => {
   const url = pendingLink
   pendingLink = null
   return url
-})
-
-const LATEST_RELEASE = 'https://api.github.com/repos/zain-curricular/win-notes/releases/latest'
-const RELEASES_PAGE = 'https://github.com/zain-curricular/win-notes/releases/latest'
-
-// Best effort: no network, GitHub rate limits or an odd reply all mean "no notice", never an error.
-ipcMain.handle('check-update', async () => {
-  try {
-    const res = await net.fetch(LATEST_RELEASE, { headers: { Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(5000) })
-    if (!res.ok) return null
-    const version = String(((await res.json()) as { tag_name?: unknown }).tag_name ?? '').replace(/^v/, '')
-    return isNewer(version, app.getVersion()) ? { version, url: RELEASES_PAGE } : null
-  } catch {
-    return null
-  }
 })
 
 ipcMain.on('set-zoom', (event, factor: unknown) => {
@@ -226,7 +225,8 @@ if (!app.requestSingleInstanceLock()) {
     vault = new VaultService({ dir: app.getPath('userData'), clipboard, onLock: () => mainWindow?.webContents.send('vault-locked') })
     powerMonitor.on('lock-screen', () => vault?.lock())
     powerMonitor.on('suspend', () => vault?.lock())
-    buildMenu()
+    const updates = setupUpdates({ contents: () => mainWindow?.webContents ?? null, isApp: fromApp })
+    buildMenu(() => void updates.check(true))
     createWindow()
     nativeTheme.on('updated', () => {
       if (hasOverlay && mainWindow) mainWindow.setTitleBarOverlay(overlayColors())

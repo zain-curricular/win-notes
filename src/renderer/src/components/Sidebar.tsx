@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Cloud, CloudOff, Download, Folder, FolderPlus, HardDrive, Keyboard, KeyRound, LogOut, PanelLeft, RefreshCw, Trash2, UserRound, X } from 'lucide-react'
+import { Check, CircleAlert, Cloud, CloudOff, Download, Folder, FolderPlus, HardDrive, Keyboard, KeyRound, LogOut, PanelLeft, RefreshCw, Trash2, UserRound, X } from 'lucide-react'
 import { useStore, type View } from '../lib/store'
 import { isContextMenuKey, openContextMenu, Popover, ToolButton, type MenuItem } from './ui'
 import { shortcuts } from '../lib/shortcuts'
@@ -135,22 +135,59 @@ function SyncBadge(): ReactNode {
 
 const DISMISSED_UPDATE_KEY = 'win-notes:dismissed-update'
 
-function UpdateNotice(): ReactNode {
-  const [update, setUpdate] = useState<{ version: string; url: string } | null>(null)
+function useUpdateStatus(): UpdateStatus | null {
+  const [status, setStatus] = useState<UpdateStatus | null>(null)
   useEffect(() => {
-    window.updates?.check().then((u) => {
-      if (u && localStorage.getItem(DISMISSED_UPDATE_KEY) !== u.version) setUpdate(u)
-    })
+    window.updates?.state().then((s) => s && setStatus((cur) => cur ?? s))
+    return window.updates?.onChange(setStatus)
   }, [])
-  if (!update) return null
+  return status
+}
+
+function UpdateNotice(): ReactNode {
+  const status = useUpdateStatus()
+  const [dismissed, setDismissed] = useState<UpdateStatus | null>(null)
+  if (!status || status === dismissed) return null
+  // Quiet checks only speak up once an update is ready; a check the person asked for always answers.
+  const ready = status.kind === 'ready' && (status.manual || localStorage.getItem(DISMISSED_UPDATE_KEY) !== status.version)
+  if (!ready && !(status.manual && status.kind !== 'idle')) return null
+  const dismiss = (): void => {
+    if (status.kind === 'ready') localStorage.setItem(DISMISSED_UPDATE_KEY, status.version)
+    setDismissed(status)
+  }
+  const [icon, text] =
+    status.kind === 'checking'
+      ? [<RefreshCw key="i" size={14} className="spin" />, 'Checking for updates…']
+      : status.kind === 'current'
+        ? [<Check key="i" size={14} />, `Notes is up to date (${status.version})`]
+        : status.kind === 'downloading'
+          ? [<Download key="i" size={14} />, `Downloading Notes ${status.version}… ${status.percent}%`]
+          : status.kind === 'ready'
+            ? [<Download key="i" size={14} />, status.action === 'restart' ? `Notes ${status.version} is ready` : `Notes ${status.version} is downloaded`]
+            : status.kind === 'error'
+              ? [<CircleAlert key="i" size={14} />, `Couldn't update: ${status.message}`]
+              : [null, '']
   return (
-    <div className="update-notice">
-      <a href={update.url} target="_blank" rel="noreferrer">
-        <Download size={14} /> Notes {update.version} is available
-      </a>
-      <button aria-label="Dismiss" onClick={() => (localStorage.setItem(DISMISSED_UPDATE_KEY, update.version), setUpdate(null))}>
-        <X size={13} />
-      </button>
+    <div className={`update-notice update-${status.kind}`} role="status">
+      <span className="update-text">
+        {icon}
+        {text}
+      </span>
+      {status.kind === 'ready' ? (
+        <button className="update-action" onClick={() => window.updates?.apply()}>
+          {status.action === 'restart' ? 'Restart to Update' : 'Open Installer'}
+        </button>
+      ) : null}
+      {status.kind === 'checking' || status.kind === 'downloading' ? null : (
+        <button className="update-dismiss" aria-label="Dismiss" onClick={dismiss}>
+          <X size={13} />
+        </button>
+      )}
+      {status.kind === 'downloading' ? (
+        <div className="update-progress" role="progressbar" aria-label="Download progress" aria-valuenow={status.percent} aria-valuemin={0} aria-valuemax={100}>
+          <div style={{ width: `${status.percent}%` }} />
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -174,6 +211,9 @@ function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignO
             <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_VAULT)))}>
               <KeyRound size={14} /> Secure Vault…
             </button>
+            <button className="pop-action" onClick={() => (setOpen(false), window.updates?.check())}>
+              <RefreshCw size={14} /> Check for Updates…
+            </button>
             <button className="pop-action danger" onClick={() => (setOpen(false), onSignOut())}>
               <LogOut size={14} /> Sign Out
             </button>
@@ -187,6 +227,9 @@ function AccountButton({ email, onSignOut, onSignIn }: { email?: string; onSignO
             </button>
             <button className="pop-action" onClick={() => (setOpen(false), window.dispatchEvent(new Event(OPEN_VAULT)))}>
               <KeyRound size={14} /> Secure Vault…
+            </button>
+            <button className="pop-action" onClick={() => (setOpen(false), window.updates?.check())}>
+              <RefreshCw size={14} /> Check for Updates…
             </button>
             <button className="pop-action" onClick={() => (setOpen(false), onSignIn())}>
               <Cloud size={14} /> Sign In to Sync…

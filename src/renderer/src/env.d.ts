@@ -5,6 +5,9 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string
 }
 
+/** `manual` is true when the person asked for the check, so "up to date" and errors are shown too. */
+type UpdateStatus = import('../../main/updates').UpdateState & { manual: boolean }
+
 interface Window {
   appInfo: {
     platform: string
@@ -16,7 +19,10 @@ interface Window {
     on: (cb: (url: string) => void) => () => void
   }
   updates?: {
-    check: () => Promise<{ version: string; url: string } | null>
+    state: () => Promise<UpdateStatus | null>
+    check: () => Promise<void>
+    apply: () => Promise<void>
+    onChange: (cb: (state: UpdateStatus) => void) => () => void
   }
   windowZoom?: {
     set: (factor: number) => void

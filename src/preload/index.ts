@@ -50,6 +50,13 @@ contextBridge.exposeInMainWorld('vault', {
 })
 
 contextBridge.exposeInMainWorld('updates', {
-  /** The newer release on GitHub, if there is one. */
-  check: (): Promise<{ version: string; url: string } | null> => ipcRenderer.invoke('check-update')
+  state: (): Promise<unknown> => ipcRenderer.invoke('updates-state'),
+  check: (): Promise<void> => ipcRenderer.invoke('updates-check'),
+  /** Restarts into a downloaded update, or opens the downloaded installer. */
+  apply: (): Promise<void> => ipcRenderer.invoke('updates-apply'),
+  onChange: (cb: (state: unknown) => void): (() => void) => {
+    const listener = (_e: unknown, state: unknown): void => cb(state)
+    ipcRenderer.on('updates-changed', listener)
+    return () => ipcRenderer.removeListener('updates-changed', listener)
+  }
 })
