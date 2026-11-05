@@ -42,6 +42,11 @@ describe('Ctrl/Cmd+D', () => {
     expect(ranges(s.selection)).toEqual([[1, 4], [19, 22], [14, 17]])
   })
 
+  it('searches for a double-clicked word without the space Windows selects after it', () => {
+    const s = apply(stateAt(1, 5), selectNextMatch(stateAt(1, 5)))
+    expect(ranges(s.selection)).toEqual([[5, 8], [1, 4]])
+  })
+
   it('takes the word touching the cursor, and does nothing between two spaces', () => {
     expect(ranges(apply(stateAt(4), selectNextMatch(stateAt(4))).selection)).toEqual([[1, 4]])
     const spaced = doc(p(text('a  b')))

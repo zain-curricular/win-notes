@@ -92,6 +92,9 @@ function target(state: EditorState): { main: TextRange; wholeWord: boolean; matc
     main = word
     wholeWord = true
   }
+  // Double-clicking a word on Windows also selects the space after it; VS Code searches for the word alone.
+  const trailing = sel instanceof TextSelection && /^[\p{L}\p{N}_]+(\s+)$/u.exec(state.doc.textBetween(main.from, main.to))
+  if (trailing) main = { from: main.from, to: main.to - trailing[1].length }
   if (main.from === main.to || !state.doc.resolve(main.from).sameParent(state.doc.resolve(main.to))) return null
   const needle = state.doc.textBetween(main.from, main.to, undefined, '￼')
   return { main, wholeWord, matches: findOccurrences(state.doc, needle, { wholeWord, limit: MAX_MATCHES }) }
@@ -102,11 +105,12 @@ export function selectNextMatch(state: EditorState): Transaction | null {
   const t = target(state)
   if (!t) return null
   const { doc } = state
-  if (state.selection.empty) return state.tr.setSelection(new MultiSelection([rangeAt(doc, t.main.from, t.main.to)], { wholeWord: true }))
-  const taken = new Set(state.selection.ranges.map((r) => r.$from.pos))
+  const current = state.selection instanceof MultiSelection ? state.selection.ranges : [rangeAt(doc, t.main.from, t.main.to)]
+  if (state.selection.empty) return state.tr.setSelection(new MultiSelection(current, { wholeWord: true }))
+  const taken = new Set(current.map((r) => r.$from.pos))
   const next = t.matches.find((m) => m.from >= t.main.to && !taken.has(m.from)) ?? t.matches.find((m) => !taken.has(m.from))
   if (!next) return null
-  const ranges = [rangeAt(doc, next.from, next.to), ...state.selection.ranges]
+  const ranges = [rangeAt(doc, next.from, next.to), ...current]
   return state.tr.setSelection(new MultiSelection(ranges, { wholeWord: t.wholeWord })).scrollIntoView()
 }
 
