@@ -7,12 +7,13 @@ import { join } from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { start } from './app.mjs'
 
+const VERSION = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
 const INSTALLER = Buffer.from('Notes 0.4.0 installer')
 const NAME = `Notes-0.4.0${{ darwin: '-universal.dmg', win32: '-Setup.exe' }[process.platform] ?? '_amd64.deb'}`
 
 describe('updates', () => {
   let app, server, base
-  let release = { version: '0.3.2', sha: '' }
+  let release = { version: VERSION, sha: '' }
   const saved = () => join(app.dataDir, 'updates', NAME)
 
   before(async () => {
@@ -52,7 +53,7 @@ describe('updates', () => {
 
   it('says the app is up to date when the release is this version', async () => {
     await checkForUpdates()
-    await app.waitFor(`$('.update-notice')?.textContent === 'Notes is up to date (0.3.2)'`)
+    await app.waitFor(`$('.update-notice')?.textContent === 'Notes is up to date (${VERSION})'`)
     await app.click('.update-dismiss')
     await app.waitFor(`!$('.update-notice')`)
   })
