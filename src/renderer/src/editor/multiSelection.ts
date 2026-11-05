@@ -3,7 +3,7 @@ import { closeHistory } from '@tiptap/pm/history'
 import { Fragment, Mark, Slice, type Node, type ResolvedPos } from '@tiptap/pm/model'
 import { Plugin, PluginKey, Selection, SelectionRange, TextSelection, type EditorState, type Transaction } from '@tiptap/pm/state'
 import type { Mappable } from '@tiptap/pm/transform'
-import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 import { blockText, findOccurrences, isWordChar } from './occurrences'
 import type { TextRange } from './folds'
 import { shortcuts } from '../lib/shortcuts'
@@ -54,16 +54,20 @@ export class MultiSelection extends Selection {
     )
   }
 
-  /** Copy and cut take every selected piece in document order, one per line, as VS Code does. */
+  /** Every selected piece in document order, one paragraph each. */
   content(): Slice {
     const doc = this.$from.doc
     const { schema } = doc.type
-    const pieces = this.ranges
+    const pieces = this.pieces().map((t) => schema.nodes.paragraph.create(null, schema.text(t)))
+    return pieces.length ? new Slice(Fragment.from(pieces), 1, 1) : Slice.empty
+  }
+
+  pieces(): string[] {
+    const doc = this.$from.doc
+    return this.ranges
       .filter((r) => r.$from.pos !== r.$to.pos)
       .sort((a, b) => a.$from.pos - b.$from.pos)
       .map((r) => doc.textBetween(r.$from.pos, r.$to.pos))
-    if (!pieces.length) return Slice.empty
-    return new Slice(Fragment.from(pieces.map((t) => schema.nodes.paragraph.create(null, schema.text(t)))), 1, 1)
   }
 
   // Undo returns to a single selection.
@@ -159,11 +163,39 @@ function editAll(state: EditorState, edit: (tr: Transaction, range: SelectionRan
 
 /** Typing: replaces every range with the text, each keeping the formatting it had. */
 export function insertAtAll(state: EditorState, text: string): Transaction | null {
+  return replaceAtAll(state, () => text)
+}
+
+function replaceAtAll(state: EditorState, textFor: (range: SelectionRange) => string): Transaction | null {
   return editAll(state, (tr, range, from, to) => {
     const { $from, $to } = range
+    const text = textFor(range)
     const marks = $from.pos === $to.pos ? $from.marks() : ($from.marksAcross($to) ?? Mark.none)
-    tr.replaceWith(from, to, state.schema.text(text, marks))
+    if (text) tr.replaceWith(from, to, state.schema.text(text, marks))
+    else tr.delete(from, to)
     return from + text.length
+  })
+}
+
+/**
+ * Pasting one line puts it at every range. Pasting as many lines as there are ranges gives each range its own line in
+ * note order, so a multi-range copy pastes back piece by piece, as in VS Code. Anything else is left to a normal paste.
+ */
+export function pasteAtAll(state: EditorState, text: string): Transaction | null {
+  const sel = state.selection
+  if (!(sel instanceof MultiSelection) || !text) return null
+  const lines = text.split(/\r\n|\r|\n/)
+  if (lines.length === 1) return insertAtAll(state, text)
+  if (lines.length !== sel.ranges.length) return null
+  const order = [...sel.ranges].sort((a, b) => a.$from.pos - b.$from.pos)
+  return replaceAtAll(state, (range) => lines[order.indexOf(range)])
+}
+
+/** Cut removes every selected piece and leaves a caret at each. */
+export function cutAll(state: EditorState): Transaction | null {
+  return editAll(state, (tr, _range, from, to) => {
+    tr.delete(from, to)
+    return from
   })
 }
 
@@ -200,6 +232,20 @@ const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'C
 const isTyping = (e: KeyboardEvent): boolean => e.key.length === 1 && !e.ctrlKey && !e.metaKey
 const isClipboard = (e: KeyboardEvent): boolean => (e.ctrlKey || e.metaKey) && ['KeyC', 'KeyX', 'KeyV'].includes(e.code)
 const plain = (e: KeyboardEvent): boolean => !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
+
+/** Copy and cut put the pieces on the clipboard one per line, as VS Code does, instead of a blank line between each. */
+const writeClipboard = ({ cut }: { cut: boolean }) => (view: EditorView, event: ClipboardEvent): boolean => {
+  const sel = view.state.selection
+  const pieces = sel instanceof MultiSelection ? sel.pieces() : []
+  if (!pieces.length || !event.clipboardData) return false
+  event.preventDefault()
+  event.clipboardData.clearData()
+  event.clipboardData.setData('text/html', view.serializeForClipboard(sel.content()).dom.innerHTML)
+  event.clipboardData.setData('text/plain', pieces.join('\n'))
+  const tr = cut ? cutAll(view.state) : null
+  if (tr) view.dispatch(tr.setMeta('uiEvent', 'cut'))
+  return true
+}
 
 function caret(): HTMLElement {
   const el = document.createElement('span')
@@ -249,6 +295,20 @@ export function multiSelectionPlugin(): Plugin {
           const tr = collapseToMain(view.state)
           if (tr) view.dispatch(tr)
           return false
+        },
+        copy: writeClipboard({ cut: false }),
+        cut: writeClipboard({ cut: true }),
+        // Runs before the editor's paste handlers, which would replace every range with a single copy of the text.
+        paste(view, event) {
+          if (!(view.state.selection instanceof MultiSelection)) return false
+          const tr = pasteAtAll(view.state, event.clipboardData?.getData('text/plain') ?? '')
+          if (!tr) {
+            view.dispatch(collapseToMain(view.state)!)
+            return false
+          }
+          event.preventDefault()
+          view.dispatch(tr.setMeta('uiEvent', 'paste'))
+          return true
         }
       },
       decorations(state) {

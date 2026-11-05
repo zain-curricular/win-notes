@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { history, undo } from '@tiptap/pm/history'
 import { EditorState, TextSelection, type Selection, type Transaction } from '@tiptap/pm/state'
-import { collapseToMain, deleteAtAll, insertAtAll, MultiSelection, multiSelectionPlugin, selectAllMatches, selectNextMatch } from './multiSelection'
+import { collapseToMain, cutAll, deleteAtAll, insertAtAll, MultiSelection, multiSelectionPlugin, pasteAtAll, selectAllMatches, selectNextMatch } from './multiSelection'
 import { doc, p, text } from './testDoc'
 
 // "cat category cat" holds cat at 1-4, category at 5-13 (cat at 5-8) and cat at 14-17; the bold cat is at 19-22.
@@ -120,8 +120,19 @@ describe('editing several ranges', () => {
     expect(s.selection).toBeInstanceOf(TextSelection)
   })
 
-  it('copies every selected piece, one per line', () => {
-    const sel = allCats().selection
-    expect(sel.content().content.textBetween(0, sel.content().content.size, '\n')).toEqual('cat\ncat\ncat')
+  it('pastes one line at every range, and one line per range in note order', () => {
+    expect(texts(apply(allCats(), pasteAtAll(allCats(), 'cow')))).toEqual(['cow category cow', 'cow'])
+    expect(texts(apply(allCats(), pasteAtAll(allCats(), 'a\r\nb\nc')))).toEqual(['a category b', 'c'])
+  })
+
+  it('leaves a paste that fits neither to the editor, so no range is lost', () => {
+    expect(pasteAtAll(allCats(), 'a\nb')).toBeNull()
+    expect(pasteAtAll(allCats(), '')).toBeNull()
+  })
+
+  it('cut removes every piece and keeps a caret at each', () => {
+    const s = apply(allCats(), cutAll(allCats()))
+    expect(texts(s)).toEqual([' category ', ''])
+    expect(ranges(s.selection)).toEqual([[1, 1], [11, 11], [13, 13]])
   })
 })

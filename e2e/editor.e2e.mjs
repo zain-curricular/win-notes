@@ -140,6 +140,22 @@ describe('editing', () => {
     assert.deepEqual(await html('p'), ['X dog X', 'X dog X'])
   })
 
+  it('copies, pastes and undoes at every copy selected with Mod-D', async () => {
+    await newNote('Pets', 'cat dog cat', 'cat')
+    await select('cat')
+    await app.waitFor(`$$('.ProseMirror .selection-match').length === 2`)
+    await app.key('d', [MOD])
+    await app.key('d', [MOD])
+    await app.waitFor(`$$('.ProseMirror .multi-selection').length === 2`)
+    assert.equal(await clipboardEvent('copy'), 'cat\ncat\ncat')
+    await clipboardEvent('paste', { 'text/plain': 'cow' })
+    await app.waitFor(`$$('.ProseMirror p').map((p) => p.textContent).join('|') === 'cow dog cow|cow'`)
+    await app.typeKeys('s')
+    await app.waitFor(`$$('.ProseMirror p').map((p) => p.textContent).join('|') === 'cows dog cows|cows'`)
+    await app.key('z', [MOD])
+    await app.waitFor(`$$('.ProseMirror p').map((p) => p.textContent).join('|') === 'cat dog cat|cat'`)
+  })
+
   it('copies and cuts the whole line when nothing is selected', async () => {
     await newNote('Lines', 'keep me', 'cut me')
     assert.equal(await clipboardEvent('copy'), 'cut me\n')
