@@ -1,8 +1,7 @@
 node_modules
 out
 release
-.env
-.env.local
 .env.supabase.local
 .env.*.local
 site/icon.png
+config.bat
