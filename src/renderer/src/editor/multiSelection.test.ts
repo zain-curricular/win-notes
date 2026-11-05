@@ -71,11 +71,29 @@ describe('editing several ranges', () => {
     expect(ranges(s.selection)).toEqual([[4, 4], [17, 17], [22, 22]])
   })
 
-  it('undoes the whole edit in one step', () => {
-    const s = apply(allCats(), insertAtAll(allCats(), 'dog'))
-    let undone = s
-    undo(s, (tr) => (undone = s.apply(tr)))
-    expect(texts(undone)).toEqual(['cat category cat', 'cat'])
+  const undone = (s: EditorState): EditorState => {
+    let out = s
+    undo(s, (tr) => (out = s.apply(tr)))
+    return out
+  }
+  const type = (s: EditorState, keys: string, time?: number): EditorState =>
+    [...keys].reduce((acc, ch) => apply(acc, time === undefined ? insertAtAll(acc, ch) : insertAtAll(acc, ch)!.setTime(time)), s)
+
+  it('undoes a word typed at every range in one step, as with one cursor', () => {
+    expect(texts(undone(type(allCats(), 'dog')))).toEqual(['cat category cat', 'cat'])
+  })
+
+  it('keeps the edit out of the undo step of typing just before it', () => {
+    let s = stateAt(22)
+    s = s.apply(s.tr.insertText('!'))
+    s = s.apply(s.tr.setSelection(TextSelection.create(s.doc, 20)))
+    s = type(apply(s, selectAllMatches(s)), 'dog')
+    expect(texts(undone(s))).toEqual(['cat category cat', 'cat!'])
+  })
+
+  it('starts a new undo step after a pause in typing', () => {
+    const s = type(type(allCats(), 'do', Date.now() - 1000), 'g')
+    expect(texts(undone(s))).toEqual(['do category do', 'do'])
   })
 
   it('Backspace and Delete work at every caret', () => {

@@ -1,4 +1,5 @@
 import { Extension } from '@tiptap/core'
+import { closeHistory } from '@tiptap/pm/history'
 import { Fragment, Mark, Slice, type Node, type ResolvedPos } from '@tiptap/pm/model'
 import { Plugin, PluginKey, Selection, SelectionRange, TextSelection, type EditorState, type Transaction } from '@tiptap/pm/state'
 import type { Mappable } from '@tiptap/pm/transform'
@@ -10,6 +11,11 @@ import { shortcuts } from '../lib/shortcuts'
 const EDIT = 'multiSelectionEdit'
 // Far above anything a person selects one press at a time; keeps a runaway note from freezing the editor.
 const MAX_MATCHES = 10_000
+// ProseMirror history's own delay between typing steps that undo as one.
+const UNDO_GROUP_MS = 500
+
+type EditGroup = { group: symbol; time: number }
+const key = new PluginKey<EditGroup | null>('multiSelection')
 
 const rangeAt = (doc: Node, from: number, to: number): SelectionRange => new SelectionRange(doc.resolve(from), doc.resolve(to))
 
@@ -141,7 +147,14 @@ function editAll(state: EditorState, edit: (tr: Transaction, range: SelectionRan
     const mapped = tr.mapping.slice(step).map(pos, -1)
     return rangeAt(tr.doc, mapped, mapped)
   })
-  return tr.setSelection(new MultiSelection(ranges, { wholeWord: sel.wholeWord })).setMeta(EDIT, true).scrollIntoView()
+  // History joins two steps into one undo only when the second touches the first, which edits spread over the note
+  // never do. Its composition meta joins them instead, while the edits follow each other as quickly as typing does,
+  // and the first edit of a run closes the step before it so it never merges into earlier typing.
+  const last = key.getState(state)
+  const joins = last && tr.time - last.time < UNDO_GROUP_MS
+  const group = joins ? last.group : Symbol(EDIT)
+  if (!joins) closeHistory(tr)
+  return tr.setSelection(new MultiSelection(ranges, { wholeWord: sel.wholeWord })).setMeta(EDIT, group).setMeta('composition', group).scrollIntoView()
 }
 
 /** Typing: replaces every range with the text, each keeping the formatting it had. */
@@ -195,8 +208,16 @@ function caret(): HTMLElement {
 }
 
 export function multiSelectionPlugin(): Plugin {
-  return new Plugin({
-    key: new PluginKey('multiSelection'),
+  return new Plugin<EditGroup | null>({
+    key,
+    state: {
+      init: () => null,
+      apply: (tr, last) => {
+        const group = tr.getMeta(EDIT) as symbol | undefined
+        if (group) return { group, time: tr.time }
+        return tr.docChanged ? null : last
+      }
+    },
     props: {
       handleKeyDown(view, event) {
         const run = (tr: Transaction | null): boolean => {
