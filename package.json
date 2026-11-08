@@ -6,9 +6,9 @@
   "desktopName": "win-notes.desktop",
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "start": "electron-vite preview",
+    "dev": "node init && electron-vite dev",
+    "build": "node init && electron-vite build",
+    "start": "node init && electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:e2e": "node --test --test-concurrency=1 \"e2e/*.e2e.mjs\"",
@@ -17,7 +17,7 @@
     "dist:mac": "electron-vite build && electron-builder --mac --publish never",
     "dist:linux": "electron-vite build && electron-builder --linux --publish never",
     "setup:cloud": "node scripts/setup-cloud.mjs",
-    "build:editor": "node scripts/build-mobile-editor.mjs",
+    "build:editor": "node init && node scripts/build-mobile-editor.mjs",
     "dist:android": "node scripts/build-android.mjs"
   },
   "dependencies": {
